@@ -6,13 +6,14 @@ import { fetchAnimeDetailsById } from './utils/anilist.js';
 
 const { Client, GatewayIntentBits, Collection, ActivityType } = pkg;
 
-// Global error handlers to prevent bot from crashing
+/*This code block will be removed soon*/
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
 });
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
+/*This code block will be removed soon*/
 
 const client = new Client({
   intents: [
@@ -173,7 +174,7 @@ function setLastPollTimestamp(ts) {
   });
 }
 
-client.once('ready', () => {
+client.once('clientReady', () => {
   try {
     client.user.setPresence({
       status: 'online',
@@ -254,8 +255,6 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-client.login(process.env.DISCORD_BOT_TOKEN).catch(err => {
-  console.error('Failed to login:', err);
-});
+client.login(process.env.DISCORD_BOT_TOKEN).then(() => {loadError(client);}).catch((e) => console.log(e));
 
 export { scheduleNotification };

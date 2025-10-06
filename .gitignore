@@ -4,5 +4,6 @@ generalidea.md
 node_modules/
 package-lock.json
 tests/
-src/database/database.db
-docs.md
+database.db
+FetchTest.js
+.github
