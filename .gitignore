@@ -6,3 +6,4 @@ package-lock.json
 tests/
 src/database/database.db
 docs.md
+test.js
