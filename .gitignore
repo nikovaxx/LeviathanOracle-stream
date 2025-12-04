@@ -1,9 +1,0 @@
-.env
-roadmap.md
-generalidea.md
-node_modules/
-package-lock.json
-tests/
-database.db
-FetchTest.js
-.github
