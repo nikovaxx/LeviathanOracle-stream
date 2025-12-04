@@ -52,9 +52,12 @@ Complete code rewrite by [Nikovax](https://github.com/DisguiseGuy) & Original au
 
 ## References & Acknowledgements
 
-- [Discord.js Documentation](https://discord.js.org/#/docs)  
-- [AniList GraphQL API](https://anilist.gitbook.io/anilist-apiv2-docs/)  
-- [Jikan API for MyAnimeList](https://jikan.moe/)  
+- [Discord.js Documentation](https://discord.js.org/#/docs)
+- [AniList GraphQL API for Anime search](https://anilist.gitbook.io/anilist-apiv2-docs/)
+- [Jikan API for Manga search](https://jikan.moe/)
+- [Mangadex API for Manga search](https://api.mangadex.org/docs/)
+- [AnimeSchedule API for notification system](https://animeschedule.net/api/v3/documentation)
 - [Nyaa Torrent RSS](https://nyaa.si)
+
 
 
