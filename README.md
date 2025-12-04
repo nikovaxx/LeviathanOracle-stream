@@ -15,7 +15,7 @@ Complete code rewrite by [Nikovax](https://github.com/DisguiseGuy) & Original au
 - Global error handler to handle all errors. (Requires webhoook)
 - Modular architecture with clean code structure
 
-**NOTE**: Code is in a very early state and maube bugged and incomplete in some places. V2 is still not being hosted/deployed yet.
+**NOTE**: Code is in a very early state and maybe bugged and incomplete in some places. V2 is still not being hosted/deployed yet.
 
 ## Features
 
@@ -56,4 +56,5 @@ Complete code rewrite by [Nikovax](https://github.com/DisguiseGuy) & Original au
 - [AniList GraphQL API](https://anilist.gitbook.io/anilist-apiv2-docs/)  
 - [Jikan API for MyAnimeList](https://jikan.moe/)  
 - [Nyaa Torrent RSS](https://nyaa.si)
+
 
