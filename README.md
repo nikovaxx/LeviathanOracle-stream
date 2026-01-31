@@ -25,7 +25,7 @@ A Discord bot for managing anime watchlists with real-time notifications, profil
 - PostgreSQL database
 - Redis server
 - Discord bot token
-- AnimeSchedule API token (optional)
+- AnimeSchedule API token
 
 ## Installation
 
@@ -46,13 +46,13 @@ A Discord bot for managing anime watchlists with real-time notifications, profil
 ```json
 {
   "bot": {
-    "token": "DISCORD_TOKEN_HERE",
-    "id": "DISCORD_BOT_ID_HERE",
+    "token": "DISCORD_TOKEN_HERE", // Required
+    "id": "DISCORD_BOT_ID_HERE", // Required
     "admins": [
-      "DISCORD_ADMIN_ID_1_HERE",
+      "DISCORD_ADMIN_ID_1_HERE",  // At least one required
       "DISCORD_ADMIN_ID_2_HERE"
     ],
-    "ownerId": "DISCORD_OWNER_ID_HERE",
+    "ownerId": "DISCORD_OWNER_ID_HERE", // Required
     "developerCommandsServerIds": [
       "DISCORD_DEVELOPER_COMMANDS_SERVER_ID_HERE"
     ]
