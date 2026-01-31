@@ -31,7 +31,7 @@ A Discord bot for managing anime watchlists with real-time notifications, profil
 
 1. **Clone the repository**
    ```bash
-   cd "LeviathanOracle (V2)"
+   git clone https://github.com/nikovaxx/LeviathanOracle-stream.git
    ```
 
 2. **Install dependencies**
@@ -64,7 +64,7 @@ A Discord bot for managing anime watchlists with real-time notifications, profil
       "config": {
         "host": "host",
         "port": 1234,
-        "database": "databse name",
+        "database": "database name",
         "user": "username"
       }
     },
@@ -101,21 +101,21 @@ A Discord bot for managing anime watchlists with real-time notifications, profil
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `/watchlist add <title>` | Add anime to watchlist with autocomplete |
-| `/watchlist remove <title>` | Remove anime from watchlist |
-| `/watchlist show` | View your watchlist |
-| `/linkprofile mal <username>` | Link MyAnimeList account |
-| `/linkprofile anilist <username>` | Link AniList account |
-| `/linked-profile` | View your linked profiles |
-| `/search-anime <title>` | Search for anime details |
-| `/search-manga <title>` | Search for manga details |
-| `/search-profile-anilist <username>` | View AniList profile |
-| `/search-profile-mal <username>` | View MAL profile |
-| `/upcoming <day> [type]` | View upcoming episodes |
-| `/nyaa` | Get English-translated anime from Nyaa |
-| `/ping` | Check bot latency |
+| Command                                | Description                                 |
+|----------------------------------------|---------------------------------------------|
+| `/watchlist add <title>`               | Add anime to watchlist with autocomplete    |
+| `/watchlist remove <title>`            | Remove anime from watchlist                 |
+| `/watchlist show`                      | View your watchlist                         |        
+| `/linkprofile mal <username>`          | Link MyAnimeList account                    |
+| `/linkprofile anilist <username>`      | Link AniList account                        |
+| `/linked-profile`                      | View your linked profiles                   |
+| `/search-anime <title>`                | Search for anime details                    |
+| `/search-manga <title>`                | Search for manga details                    |
+| `/search-profile-anilist <username>`   | View AniList profile                        |
+| `/search-profile-mal <username>`       | View MAL profile                            |
+| `/upcoming <day> [type]`               | View upcoming episodes                      |
+| `/nyaa`                                | Get English-translated anime from Nyaa      |
+| `/ping`                                | Check bot latency                           |
 
 ## How It Works
 
@@ -158,4 +158,3 @@ npm start
 ## License
 
 MIT License - See LICENSE file for details
-
