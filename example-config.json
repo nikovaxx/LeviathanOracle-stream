@@ -1,0 +1,47 @@
+{
+  "bot": {
+    "token": "DISCORD_TOKEN_HERE",
+    "id": "DISCORD_BOT_ID_HERE",
+    "admins": [
+      "DISCORD_ADMIN_ID_1_HERE",
+      "DISCORD_ADMIN_ID_2_HERE"
+    ],
+    "ownerId": "DISCORD_OWNER_ID_HERE",
+    "developerCommandsServerIds": [
+      "DISCORD_DEVELOPER_COMMANDS_SERVER_ID_HERE"
+    ]
+  },
+  "database": {
+    "mongodbUrl": "MONGODB_URL_HERE",
+    "postgressql": {
+      "enabled": false,
+      "config": {
+        "host": "host",
+        "port": "port",
+        "database": "databse name",
+        "user": "username"
+      }
+    },
+    "redis": {
+      "enabled": false,
+      "config": {
+        "host": "host",
+        "port": "port",
+        "password": "password"
+      }
+    }
+  },
+  "apitokens": {
+    "animeschedule": "ANIMESCHEDULE_API_TOKEN_HERE",
+    "anilist": "ANILIST_API_TOKEN_HERE"
+  },
+  "logging": {
+    "guildJoinLogsId": "SERVER_JOIN_LOGS_CHANNEL_ID_HERE",
+    "guildLeaveLogsId": "SERVER_LEAVE_LOGS_CHANNEL_ID_HERE",
+    "commandLogsChannelId": "COMMAND_LOGS_CHANNEL_ID_HERE",
+    "errorLogs": "ERROR_LOGS_WEBHOOK_URL_HERE"
+  },
+  "prefix": {
+    "value": "!"
+  }
+}
