@@ -1,12 +1,12 @@
 {
   "bot": {
-    "token": "DISCORD_TOKEN_HERE",  [Required]
-    "id": "DISCORD_BOT_ID_HERE",  [Required]
+    "token": "DISCORD_TOKEN_HERE",
+    "id": "DISCORD_BOT_ID_HERE",
     "admins": [
-      "DISCORD_ADMIN_ID_1_HERE",  [At least one required]
+      "DISCORD_ADMIN_ID_1_HERE",
       "DISCORD_ADMIN_ID_2_HERE"
     ],
-    "ownerId": "DISCORD_OWNER_ID_HERE",  [Required]
+    "ownerId": "DISCORD_OWNER_ID_HERE",
     "developerCommandsServerIds": [
       "DISCORD_DEVELOPER_COMMANDS_SERVER_ID_HERE"
     ]
@@ -14,27 +14,27 @@
   "database": {
     "mongodbUrl": "MONGODB_URL_HERE",
     "postgressql": {
-      "enabled": false,  [Required to be set to true]
+      "enabled": false,
       "config": {
-        "host": "host",  [Required to put server IP]
-        "port": 1234,  [Required to put server port]
-        "password": "password",  [Required to put server password]
-        "database": "database name",  [Required to put database name]
-        "user": "username"  [Required to put database username]
+        "host": "host",
+        "port": 1234,
+        "password": "password",
+        "database": "database name",
+        "user": "username"
       }
     },
     "redis": {
-      "enabled": false,  [Required to be set to true]
+      "enabled": false,
       "config": {
-        "host": "host",  [Required to put server IP]
-        "port": 1234,  [Required to put server port]
-        "password": "password"  [Required to put server password]
+        "host": "host",
+        "port": 1234,
+        "password": "password"
       }
     }
   },
   "apitokens": {
-    "animeschedule": "ANIMESCHEDULE_API_TOKEN_HERE",  [Required]
-    "anilist": "ANILIST_API_TOKEN_HERE"  [Required]
+    "animeschedule": "ANIMESCHEDULE_API_TOKEN_HERE",
+    "anilist": "ANILIST_API_TOKEN_HERE"
   },
   "logging": {
     "guildJoinLogsId": "SERVER_JOIN_LOGS_CHANNEL_ID_HERE",
