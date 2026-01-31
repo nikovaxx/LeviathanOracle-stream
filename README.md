@@ -62,20 +62,21 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
   "database": {
     "mongodbUrl": "MONGODB_URL_HERE",
     "postgressql": {
-      "enabled": false,
+      "enabled": false,  [Required to be set to true]
       "config": {
-        "host": "host",
-        "port": 1234,
-        "database": "database name",
-        "user": "username"
+        "host": "host",  [Required to put server IP]
+        "port": 1234,  [Required to put server port]
+        "password": "password",  [Required to put server password]
+        "database": "database name",  [Required to put database name]
+        "user": "username"  [Required to put database username]
       }
     },
     "redis": {
-      "enabled": false,
+      "enabled": false,  [Required to be set to true]
       "config": {
-        "host": "host",
-        "port": 1234,
-        "password": "password"
+        "host": "host",  [Required to put server IP]
+        "port": 1234,  [Required to put server port]
+        "password": "password"  [Required to put server password]
       }
     }
   },
