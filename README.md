@@ -1,63 +1,160 @@
 # LeviathanOracle V2
 
-A Discord bot built to manage anime watchlists, link user profiles from MyAnimeList and AniList, search for anime/manga details, and fetch English-translated anime from Nyaa.
-The idea for this bot was given by my friend [baku](https://github.com/maiorikizu) and brought to life by [Pilot_kun](https://github.com/PilotKun)(me) and [Nikovax](https://github.com/DisguiseGuy).
+A Discord bot for managing anime watchlists with real-time notifications, profile linking, and comprehensive anime/manga search features.
 
-Complete code rewrite by [Nikovax](https://github.com/DisguiseGuy) & Original author/owner, [Pilot_kun](https://github.com/PilotKun)
-
-## 🚀 New in V2
+## New in V2
 
 ### Core Changes
 - **PostgreSQL** for structured data storage (5 GB)
 - **Redis** for caching and performance optimization (2 GB)
 - **node-cron** for precise notification scheduling
 - Advanced rate limiting and API optimization
-- Global error handler to handle all errors. (Requires webhoook)
 - Modular architecture with clean code structure
 
-**NOTE**: Code is in a very early state and maybe bugged and incomplete in some places. V2 is still not being hosted/deployed yet.
+### Features
+- **Watchlist Management** - Add/remove anime with autocomplete
+- **Smart Notifications** - Cron-based episode release notifications
+- **Profile Linking** - Link MAL and AniList accounts
+- **Search** - Anime, manga, and user profiles with caching
+- **Schedule** - View upcoming episodes by day
+- **Nyaa Integration** - English-translated anime torrents
 
-## Features
+## Prerequisites
 
-- **Profile Linking & Retrieval**  
-  - Link your MyAnimeList or AniList account using the [`/linkprofile`](src/commands/linkprofile.js) command.  
-  - View your linked profiles with [`/linkedprofile`](src/commands/linked-profile.js).  
-  - Fetch AniList profiles using [`/search-profile-anilist`](src/commands/search-profile-anilist.js) and MyAnimeList profiles using [`/search-profile-mal`](src/commands/search-profile-mal.js). 
+- Node.js v18 or higher
+- PostgreSQL database
+- Redis server
+- Discord bot token
+- AnimeSchedule API token (optional)
 
-- **Anime/Manga Search**  
-  - Search for anime details with [`/search-anime`](src/commands/search-anime.js).  
-  - Search for manga details with [`/search-manga`](src/commands/search-manga.js).
-  - Search for upcoming anime episodes with [`/upcoming`](src/commands/upcoming.js).
+## Installation
 
-- **Watchlist Management**  
-  - Add anime to your watchlist using [`/watchlist add`](src/commands/watchlist.js).  
-  - Remove anime from your watchlist using [`/watchlist remove`](src/commands/watchlist.js).  
-  - Display your current watchlist with [`/watchlist show`](src/commands/watchlist.js).  
-  - Automatic checking for upcoming episodes based on users' watchlists and notifying them in DM's.
+1. **Clone the repository**
+   ```bash
+   cd "LeviathanOracle (V2)"
+   ```
 
-- **Nyaa Anime Fetching**  
-  - Search for English-translated anime torrents from Nyaa using [`/nyaa`](src/commands/nyaa.js).
-  - Utility functions for RSS feed parsing and filtering are implemented in [`src/utils/nyaaRSS.js`](src/utils/nyaaRSS.js).
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## Resources & Dependencies
+3. **Configure environment**
+   - Create a json file `config.json`
+   - Copy `example-config.json` to `config.json`
+   - Fill in your credentials
+```json
+{
+  "bot": {
+    "token": "DISCORD_TOKEN_HERE",
+    "id": "DISCORD_BOT_ID_HERE",
+    "admins": [
+      "DISCORD_ADMIN_ID_1_HERE",
+      "DISCORD_ADMIN_ID_2_HERE"
+    ],
+    "ownerId": "DISCORD_OWNER_ID_HERE",
+    "developerCommandsServerIds": [
+      "DISCORD_DEVELOPER_COMMANDS_SERVER_ID_HERE"
+    ]
+  },
+  "database": {
+    "mongodbUrl": "MONGODB_URL_HERE",
+    "postgressql": {
+      "enabled": false,
+      "config": {
+        "host": "host",
+        "port": 1234,
+        "database": "databse name",
+        "user": "username"
+      }
+    },
+    "redis": {
+      "enabled": false,
+      "config": {
+        "host": "host",
+        "port": 1234,
+        "password": "password"
+      }
+    }
+  },
+  "logging": {
+    "guildJoinLogsId": "SERVER_JOIN_LOGS_CHANNEL_ID_HERE",
+    "guildLeaveLogsId": "SERVER_LEAVE_LOGS_CHANNEL_ID_HERE",
+    "commandLogsChannelId": "COMMAND_LOGS_CHANNEL_ID_HERE",
+    "errorLogs": "ERROR_LOGS_WEBHOOK_URL_HERE"
+  },
+  "prefix": {
+    "value": "!"
+  }
+}
+```
 
-- **Discord.js**: For interacting with Discord APIs and handling interactions.
-- **Axios**: HTTP client for fetching data from AniList, MyAnimeList (via Jikan API), and Nyaa RSS feeds.
-- **ioredis**: Database used for caching.
-- **pg**: Database used for storing user profile links and watchlists
-- **rss-parser**: For parsing the Nyaa RSS feed (src/utils/nyaaRSS.js).
-- **dotenv**: For managing Tokens, passwords and Secrets.
-- **node-crone**: For notification jobs.
-- **chalk**: For the new implementation of a global error handler in the bot. Also used for logging.
+4. **Setup database**
+   - Ensure PostgreSQL and Redis are running
+   - Database tables are created automatically on first run
 
-## References & Acknowledgements
+5. **Start the bot**
+   ```bash
+   npm start
+   ```
+   - Commands are automatically registered on startup
 
-- [Discord.js Documentation](https://discord.js.org/#/docs)
-- [AniList GraphQL API for Anime search](https://anilist.gitbook.io/anilist-apiv2-docs/)
-- [Jikan API for Manga search](https://jikan.moe/)
-- [Mangadex API for Manga search](https://api.mangadex.org/docs/)
-- [AnimeSchedule API for notification system](https://animeschedule.net/api/v3/documentation)
-- [Nyaa Torrent RSS](https://nyaa.si)
+## Commands
 
+| Command | Description |
+|---------|-------------|
+| `/watchlist add <title>` | Add anime to watchlist with autocomplete |
+| `/watchlist remove <title>` | Remove anime from watchlist |
+| `/watchlist show` | View your watchlist |
+| `/linkprofile mal <username>` | Link MyAnimeList account |
+| `/linkprofile anilist <username>` | Link AniList account |
+| `/linked-profile` | View your linked profiles |
+| `/search-anime <title>` | Search for anime details |
+| `/search-manga <title>` | Search for manga details |
+| `/search-profile-anilist <username>` | View AniList profile |
+| `/search-profile-mal <username>` | View MAL profile |
+| `/upcoming <day> [type]` | View upcoming episodes |
+| `/nyaa` | Get English-translated anime from Nyaa |
+| `/ping` | Check bot latency |
 
+## How It Works
 
+### Notification System
+1. User adds anime to watchlist
+2. Next airing time is fetched and stored in PostgreSQL
+3. Cron job schedules notification using `node-cron`
+4. Hourly job updates anime schedules for delays/changes
+5. Notification sent via DM when episode airs
+
+### Caching Strategy
+- **Redis TTL:**
+  - Anime details: 1 hour
+  - Search results: 30 minutes
+  - Schedule data: 5 minutes
+  - User profiles: 15 minutes
+
+### Rate Limiting
+- Autocomplete: 20 requests per 10 seconds
+- Search commands: 10 requests per 60 seconds
+- Prevents API abuse and ensures stability
+
+## Development
+
+```bash
+# Development mode with auto-reload
+npm run dev
+
+# Production mode
+npm start
+```
+
+## Notes
+
+- No local SQL database - PostgreSQL only
+- Redis is used for all caching operations
+- Cron jobs automatically rehydrate on restart
+- Commands use autocomplete for better UX
+
+## License
+
+MIT License - See LICENSE file for details
