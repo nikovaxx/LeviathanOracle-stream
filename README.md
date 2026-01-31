@@ -46,13 +46,13 @@ A Discord bot for managing anime watchlists with real-time notifications, profil
 ```json
 {
   "bot": {
-    "token": "DISCORD_TOKEN_HERE", // Required
-    "id": "DISCORD_BOT_ID_HERE", // Required
+    "token": "DISCORD_TOKEN_HERE",  [Required]
+    "id": "DISCORD_BOT_ID_HERE",  [Required]
     "admins": [
-      "DISCORD_ADMIN_ID_1_HERE",  // At least one required
+      "DISCORD_ADMIN_ID_1_HERE",  [At least one required]
       "DISCORD_ADMIN_ID_2_HERE"
     ],
-    "ownerId": "DISCORD_OWNER_ID_HERE", // Required
+    "ownerId": "DISCORD_OWNER_ID_HERE",  [Required]
     "developerCommandsServerIds": [
       "DISCORD_DEVELOPER_COMMANDS_SERVER_ID_HERE"
     ]
@@ -158,3 +158,4 @@ npm start
 ## License
 
 MIT License - See LICENSE file for details
+
