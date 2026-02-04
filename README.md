@@ -7,25 +7,28 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 ## New in V2
 
 ### Core Changes
-- **PostgreSQL** for structured data storage (5 GB)
-- **Redis** for caching and performance optimization (2 GB)
-- **node-cron** for precise notification scheduling
-- Advanced rate limiting and API optimization
-- Modular architecture with clean code structure
+
+- Rewritten command system with a clean structure (`commands/`, `messages/`, `events/`, `functions/`, `schemas/`, `utils/`).
+- Unified database layer with SQLite3 as the default local database and optional PostgreSQL & MongoDB support.
+- Optional Redis caching layer for better API performance.
+- Shared UI helper system for embeds/components/modals.
+- Improved reliability: consistent error handling across commands.
 
 ### Features
-- **Watchlist Management** - Add/remove anime with autocomplete
-- **Smart Notifications** - Cron-based episode release notifications
-- **Profile Linking** - Link MAL and AniList accounts
-- **Search** - Anime, manga, and user profiles with caching
-- **Schedule** - View upcoming episodes by day
-- **Nyaa Integration** - English-translated anime torrents
+
+- Anime watchlist (add/remove/show) with scheduling support.
+- Link and view profiles (MyAnimeList + AniList).
+- Search anime/manga details (Jikan/MAL) and browse upcoming episodes.
+- Nyaa RSS search for English-translated releases.
+- Notification system upgrades: user preferences + role-based notifications.
+- Built-in `/report` system.
 
 ## Prerequisites
 
 - Node.js v18 or higher
-- PostgreSQL database
-- Redis server
+- SQLite3 (default local DB, created automatically on first run)
+- PostgreSQL (optional)
+- Redis (optional)
 - Discord bot token
 - AnimeSchedule API token
 
@@ -33,7 +36,7 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/nikovaxx/LeviathanOracle-stream.git
+   git clone https://github.com/PilotKun/LeviathanOracle.git
    ```
 
 2. **Install dependencies**
@@ -43,46 +46,51 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 
 3. **Configure environment**
    - Create a json file `config.json`
+   - SQLite3 is used by default. If you want PostgreSQL and/or Redis, enable them in your config.
    - Copy `example-config.json` to `config.json`
    - Fill in your credentials
 ```json
 {
   "bot": {
-    "token": "DISCORD_TOKEN_HERE",  [Required]
-    "id": "DISCORD_BOT_ID_HERE",  [Required]
-    "admins": [
-      "DISCORD_ADMIN_ID_1_HERE",  [At least one required]
+    "token": "DISCORD_TOKEN_HERE",  REQUIRED
+    "id": "DISCORD_BOT_ID_HERE",  REQUIRED
+    "admins": [   REQUIRED, at least ONE
+      "DISCORD_ADMIN_ID_1_HERE",
       "DISCORD_ADMIN_ID_2_HERE"
     ],
-    "ownerId": "DISCORD_OWNER_ID_HERE",  [Required]
+    "ownerId": [
+      "OWNER_DISCORD_ID_HERE",  REQUIRED
+      "CO-OWNER_DISCORD_ID_HERE"
+    ],
     "developerCommandsServerIds": [
       "DISCORD_DEVELOPER_COMMANDS_SERVER_ID_HERE"
-    ]
+    ],
+    "reportChannelId": "REPORT_CHANNEL_ID_HERE"
   },
   "database": {
-    "mongodbUrl": "MONGODB_URL_HERE",
+    "mongodbUrl": "MONGODB_URL_HERE",  LEAVE IT BLANK in the actual config file to avoid errors
     "postgressql": {
-      "enabled": false,  [Required to be set to true]
+      "enabled": false,
       "config": {
-        "host": "host",  [Required to put server IP]
-        "port": 1234,  [Required to put server port]
-        "password": "password",  [Required to put server password]
-        "database": "database name",  [Required to put database name]
-        "user": "username"  [Required to put database username]
+        "host": "host",
+        "port": 5432,
+        "password": "password",
+        "database": "database_name",
+        "user": "username"
       }
     },
     "redis": {
-      "enabled": false,  [Required to be set to true]
+      "enabled": false,
       "config": {
-        "host": "host",  [Required to put server IP]
-        "port": 1234,  [Required to put server port]
-        "password": "password"  [Required to put server password]
+        "host": "host",
+        "port": 6379,
+        "password": "password"
       }
     }
   },
   "apitokens": {
-    "animeschedule": "ANIMESCHEDULE_API_TOKEN_HERE",  [Required]
-    "anilist": "ANILIST_API_TOKEN_HERE"  [Required]
+    "animeschedule": "ANIMESCHEDULE_API_TOKEN_HERE",  REQUIRED
+    "anilist": "ANILIST_API_TOKEN_HERE"  REQUIRED
   },
   "logging": {
     "guildJoinLogsId": "SERVER_JOIN_LOGS_CHANNEL_ID_HERE",
@@ -97,53 +105,61 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 ```
 
 4. **Setup database**
-   - Ensure PostgreSQL and Redis are running
-   - Database tables are created automatically on first run
+  - SQLite3 is the default database. Tables are created automatically on first run.
+  - Ensure PostgreSQL and Redis are running and enabled in config if you are using them. Otherwise ignore this step.
 
 5. **Start the bot**
    ```bash
    npm start
    ```
+   OR
+   ```bash
+   node .\src\index.js
+   ```
    - Commands are automatically registered on startup
 
 ## Commands
 
-| Command                                | Description                                 |
-|----------------------------------------|---------------------------------------------|
-| `/watchlist add <title>`               | Add anime to watchlist with autocomplete    |
-| `/watchlist remove <title>`            | Remove anime from watchlist                 |
-| `/watchlist show`                      | View your watchlist                         |        
-| `/linkprofile mal <username>`          | Link MyAnimeList account                    |
-| `/linkprofile anilist <username>`      | Link AniList account                        |
-| `/linked-profile`                      | View your linked profiles                   |
-| `/search-anime <title>`                | Search for anime details                    |
-| `/search-manga <title>`                | Search for manga details                    |
-| `/search-profile-anilist <username>`   | View AniList profile                        |
-| `/search-profile-mal <username>`       | View MAL profile                            |
-| `/upcoming <day> [type]`               | View upcoming episodes                      |
-| `/nyaa`                                | Get English-translated anime from Nyaa      |
-| `/ping`                                | Check bot latency                           |
+### Slash Commands
 
-## How It Works
+| Command | Description |
+|--------|-------------|
+| `/watchlist add <title>` | Add anime to your watchlist (autocomplete supported) |
+| `/watchlist remove <title>` | Remove anime from your watchlist |
+| `/watchlist show` | View your watchlist |
+| `/linkprofile mal <username>` | Link your MyAnimeList account |
+| `/linkprofile anilist <username>` | Link your AniList account |
+| `/linkedprofile` | View your linked profile(s) |
+| `/search-anime <anime>` | Search anime details (Jikan / MyAnimeList) |
+| `/search-manga <manga>` | Search manga details (Jikan / MyAnimeList) |
+| `/search-profile-mal <username>` | View a MyAnimeList profile |
+| `/search-profile-anilist <username>` | View an AniList profile |
+| `/upcoming` | Browse upcoming episodes (interactive day/type selection) |
+| `/nyaa <query>` | Search Nyaa for English-translated anime releases |
+| `/ping` | Check bot latency |
+| `/preference notification <dm\|server>` | Set how you receive notifications |
+| `/preference watchlist <private\|public>` | Set watchlist visibility |
+| `/preference view` | View your current preferences |
+| `/rolenotification add <role> <anime>` | Subscribe a role to an anime (Manage Roles required) |
+| `/rolenotification remove <role> <anime>` | Unsubscribe a role from an anime |
+| `/rolenotification list [role]` | List role-based notifications (optionally filter by role) |
+| `/report` | Submit a bug report via modal to the configured report channel |
 
-### Notification System
-1. User adds anime to watchlist
-2. Next airing time is fetched and stored in PostgreSQL
-3. Cron job schedules notification using `node-cron`
-4. Hourly job updates anime schedules for delays/changes
-5. Notification sent via DM when episode airs
+### Prefix Commands
 
-### Caching Strategy
-- **Redis TTL:**
-  - Anime details: 1 hour
-  - Search results: 30 minutes
-  - Schedule data: 5 minutes
-  - User profiles: 15 minutes
+The default prefix is configurable in `config.json`.
+Aliases can also be used for ease ouf use.
 
-### Rate Limiting
-- Autocomplete: 20 requests per 10 seconds
-- Search commands: 10 requests per 60 seconds
-- Prevents API abuse and ensures stability
+| Command | Description |
+|--------|-------------|
+| `!watchlist <add\|remove\|show> [title/ID]` | Manage watchlist (alias: `!wl`) |
+| `!upcoming <day> [type]` | View upcoming episodes (alias: `!schedule`) |
+| `!nyaa <query>` | Search Nyaa releases (alias: `!torrent`) |
+| `!linkprofile <mal\|anilist> <username>` | Link MAL/AniList account (alias: `!link`) |
+| `!linkedprofile` | View linked accounts (aliases: `!linked`, `!myprofiles`) |
+| `!ping` | Check latency (alias: `!p`) |
+| `!preference <notification\|watchlist\|view> [value]` | Manage preferences (aliases: `!pref`, `!settings`) |
+| `!rolenotification <add\|remove\|list> <@role> [anime]` | Manage role notifications (aliases: `!rolenoti`, `!rn`) |
 
 ## Development
 
@@ -154,13 +170,6 @@ npm run dev
 # Production mode
 npm start
 ```
-
-## Notes
-
-- No local SQL database - PostgreSQL only
-- Redis is used for all caching operations
-- Cron jobs automatically rehydrate on restart
-- Commands use autocomplete for better UX
 
 ## License
 
