@@ -1,0 +1,12 @@
+.env
+roadmap.md
+generalidea.md
+node_modules/
+package-lock.json
+tests/
+docs.md
+UpcomingFeatures.md
+config.json
+.github/
+localdb.db
+FetchTest.js
