@@ -105,8 +105,8 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 ```
 
 4. **Setup database**
-  - SQLite3 is the default database. Tables are created automatically on first run.
-  - Ensure PostgreSQL and Redis are running and enabled in config if you are using them. Otherwise ignore this step.
+   - SQLite3 is the default database. Tables are created automatically on first run.
+   - Ensure PostgreSQL and Redis are running and enabled in config if you are using them. Otherwise ignore this step.
 
 5. **Start the bot**
    ```bash
