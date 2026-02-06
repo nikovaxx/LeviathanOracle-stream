@@ -5,7 +5,7 @@
   "presence": {
     "enabled": true,
     "status": "online",
-    "interval": 10000,
+    "interval": 300000,
     "type": "WATCHING",
     "names": [
       "Anime News",
@@ -31,7 +31,7 @@
       "discobase.json",
       "UpcomingFeatures.md",
       "README.md",
-      "localdb.db"
+      "**/schemas/localdb.db"
     ]
   }
 }
