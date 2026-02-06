@@ -89,8 +89,7 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
     }
   },
   "apitokens": {
-    "animeschedule": "ANIMESCHEDULE_API_TOKEN_HERE",  REQUIRED
-    "anilist": "ANILIST_API_TOKEN_HERE"  REQUIRED
+    "animeschedule": "ANIMESCHEDULE_API_TOKEN_HERE"
   },
   "logging": {
     "guildJoinLogsId": "SERVER_JOIN_LOGS_CHANNEL_ID_HERE",
