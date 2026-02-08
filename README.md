@@ -1,10 +1,10 @@
-# LeviathanOracle V2
+# LeviathanOracle V3
 
 A Discord bot built to manage anime watchlists, link user profiles from MyAnimeList and AniList, search for anime/manga details, and fetch English-translated anime from Nyaa. The idea for this bot was given by my friend [baku](https://github.com/maiorikizu) and brought to life by me [Pilot_kun](https://github.com/PilotKun) and [Niko](https://github.com/nikovaxx).
 
 New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 
-## New in V2
+## New in V3
 
 ### Core Changes
 
@@ -125,7 +125,10 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 |--------|-------------|
 | `/watchlist add <title>` | Add anime to your watchlist (autocomplete supported) |
 | `/watchlist remove <title>` | Remove anime from your watchlist |
-| `/watchlist show` | View your watchlist |
+| `/watchlist view` | View your watchlist |
+| `/watchlist show <@User\|UserId>` | View others' public watchlists |
+| `/watchlist export` | Export your current watchlist |
+| `/watchlist import` | Import your current watchlist |
 | `/linkprofile mal <username>` | Link your MyAnimeList account |
 | `/linkprofile anilist <username>` | Link your AniList account |
 | `/linkedprofile` | View your linked profile(s) |
