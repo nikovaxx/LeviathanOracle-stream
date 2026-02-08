@@ -5,7 +5,7 @@ node_modules/
 package-lock.json
 tests/
 docs.md
-UpcomingFeatures.md
+Changelog.md
 config.json
 .github/
 localdb.db
