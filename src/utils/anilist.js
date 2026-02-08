@@ -28,7 +28,7 @@ async function request(cacheKey, query, variables) {
 }
 
 const MEDIA_FIELDS = `
-  id title { romaji english native } status
+  id idMal title { romaji english native } status
   nextAiringEpisode { airingAt timeUntilAiring episode }
   coverImage { large }`;
 
@@ -43,5 +43,11 @@ module.exports = {
     `anime:id:${id}`,
     `query ($id: Int) { Media(id: $id, type: ANIME) { ${MEDIA_FIELDS} } }`,
     { id }
+  ),
+
+  fetchAnimeByMalId: (malId) => request(
+    `anime:mal:${malId}`,
+    `query ($malId: Int) { Media(idMal: $malId, type: ANIME) { ${MEDIA_FIELDS} } }`,
+    { malId }
   )
 };
