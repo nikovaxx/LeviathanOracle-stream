@@ -48,7 +48,12 @@ module.exports = {
     if (!val) return interaction.respond([]);
     try {
       const { data: { data: list } } = await axios.get('https://api.jikan.moe/v4/anime', { params: { q: val, limit: 25 }, timeout: 2000 });
-      interaction.respond(list.map(a => ({ name: `${a.title_english || a.title}${a.year ? ` (${a.year})` : ''}`.slice(0, 100), value: String(a.mal_id) })));
+      const ranked = bestMatch(val, list || [], a => [a.title, a.title_english, a.title_japanese]);
+      const out = (ranked.length ? ranked : (list || [])).map(a => ({
+        name: `${a.title_english || a.title}${a.year ? ` (${a.year})` : ''}`.slice(0, 100),
+        value: String(a.mal_id)
+      }));
+      interaction.respond(out);
     } catch { interaction.respond([]); }
   }
 };

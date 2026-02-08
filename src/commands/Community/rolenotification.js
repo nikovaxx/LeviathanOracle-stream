@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const db = require('../../schemas/db');
 const { fetchAnimeDetails, fetchAnimeDetailsById } = require('../../utils/anilist');
+const { bestMatch } = require('../../utils/fuzzy');
 const scheduler = require('../../functions/notificationScheduler');
 const { embed } = require('../../functions/ui');
 
@@ -60,6 +61,11 @@ module.exports = {
     const val = interaction.options.getFocused();
     if (!val) return interaction.respond([]);
     const res = await fetchAnimeDetails(val);
-    interaction.respond(res.slice(0, 25).map(a => ({ name: (a.title.english || a.title.romaji).slice(0, 100), value: String(a.id) })));
+    const results = res || [];
+    const ranked = bestMatch(val, results, a => [a.title?.english, a.title?.romaji, a.title?.native]);
+    const out = (ranked.length ? ranked : results)
+      .slice(0, 25)
+      .map(a => ({ name: (a.title.english || a.title.romaji).slice(0, 100), value: String(a.id) }));
+    interaction.respond(out);
   }
 };

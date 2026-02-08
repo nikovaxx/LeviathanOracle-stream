@@ -166,7 +166,11 @@ module.exports = {
   async autocomplete(interaction) {
     const value = interaction.options.getFocused();
     if (!value) return interaction.respond([]);
-    const results = await fetchAnimeDetails(value);
-    await interaction.respond(results.slice(0, 25).map(a => ({ name: (a.title.english || a.title.romaji).substring(0, 100), value: String(a.id) })));
+    const results = (await fetchAnimeDetails(value)) || [];
+    const ranked = bestMatch(value, results, a => [a.title?.english, a.title?.romaji, a.title?.native]);
+    const out = (ranked.length ? ranked : results)
+      .slice(0, 25)
+      .map(a => ({ name: (a.title.english || a.title.romaji).substring(0, 100), value: String(a.id) }));
+    await interaction.respond(out);
   }
 };

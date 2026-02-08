@@ -44,10 +44,12 @@ module.exports = {
     if (!val) return interaction.respond([]);
     try {
       const { data: { data: list } } = await axios.get('https://api.jikan.moe/v4/manga', { params: { q: val, limit: 20 }, timeout: 2000 });
-      interaction.respond(list.map(m => ({ 
-        name: `${m.title_english || m.title}${m.published?.prop?.from?.year ? ` (${m.published.prop.from.year})` : ''}`.slice(0, 100), 
-        value: String(m.mal_id) 
-      })));
+      const ranked = bestMatch(val, list || [], m => [m.title, m.title_english, m.title_japanese]);
+      const out = (ranked.length ? ranked : (list || [])).map(m => ({
+        name: `${m.title_english || m.title}${m.published?.prop?.from?.year ? ` (${m.published.prop.from.year})` : ''}`.slice(0, 100),
+        value: String(m.mal_id)
+      }));
+      interaction.respond(out);
     } catch { interaction.respond([]); }
   }
 };
