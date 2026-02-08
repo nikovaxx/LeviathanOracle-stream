@@ -21,8 +21,7 @@ function filterEnglishAnimeItems(items) {
 async function fetchRSSFeedWithRetries(url, retries = 3, delay = 2000) {
   for (let i = 0; i < retries; i++) {
     try {
-      const feed = await parser.parseURL(url);
-      return feed;
+      return await parser.parseURL(url);
     } catch (error) {
       if (i === retries - 1) {
         throw error;
