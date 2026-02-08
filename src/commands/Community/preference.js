@@ -27,7 +27,7 @@ module.exports = {
       const val = interaction.options.getString(sub === 'notification' ? 'type' : 'visibility');
       const field = sub === 'notification' ? 'notification_type' : 'watchlist_visibility';
       
-      await db.query(`INSERT INTO user_preferences (user_id, ${field}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET ${field} = EXCLUDED.${field}, updated_at = NOW()`, [uid, val]);
+      await db.query(`INSERT INTO user_preferences (user_id, ${field}) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET ${field} = EXCLUDED.${field}, updated_at = CURRENT_TIMESTAMP`, [uid, val]);
 
       interaction.editReply({ embeds: [embed({ 
         title: 'Updated', color: 0x00FF00,
