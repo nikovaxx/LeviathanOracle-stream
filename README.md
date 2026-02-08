@@ -154,7 +154,6 @@ Aliases can also be used for ease ouf use.
 
 | Command | Description |
 |--------|-------------|
-| `!watchlist <add\|remove\|show> [title/ID]` | Manage watchlist (alias: `!wl`) |
 | `!upcoming <day> [type]` | View upcoming episodes (alias: `!schedule`) |
 | `!nyaa <query>` | Search Nyaa releases (alias: `!torrent`) |
 | `!linkprofile <mal\|anilist> <username>` | Link MAL/AniList account (alias: `!link`) |
