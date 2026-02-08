@@ -9,9 +9,9 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('rolenotification')
     .setDescription('Manage role-based anime notifications')
-    .addSubcommand(s => s.setName('add').setDescription('Add notification').addRoleOption(o => o.setName('role').setRequired(true)).addStringOption(o => o.setName('anime').setRequired(true).setAutocomplete(true)))
-    .addSubcommand(s => s.setName('remove').setDescription('Remove notification').addRoleOption(o => o.setName('role').setRequired(true)).addStringOption(o => o.setName('anime').setRequired(true)))
-    .addSubcommand(s => s.setName('list').setDescription('List notifications').addRoleOption(o => o.setName('role'))),
+    .addSubcommand(s => s.setName('add').setDescription('Add notification').addRoleOption(o => o.setName('role').setDescription('Role to notify').setRequired(true)).addStringOption(o => o.setName('anime').setDescription('Anime to track').setRequired(true).setAutocomplete(true)))
+    .addSubcommand(s => s.setName('remove').setDescription('Remove notification').addRoleOption(o => o.setName('role').setDescription('Role to remove from').setRequired(true)).addStringOption(o => o.setName('anime').setDescription('Anime to stop tracking').setRequired(true)))
+    .addSubcommand(s => s.setName('list').setDescription('List notifications').addRoleOption(o => o.setName('role').setDescription('Filter by role'))),
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand(), gid = interaction.guild.id;

@@ -6,8 +6,8 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('preference')
     .setDescription('Manage your bot preferences')
-    .addSubcommand(s => s.setName('notification').setDescription('Set notification delivery').addStringOption(o => o.setName('type').setRequired(true).addChoices({ name: 'DM', value: 'dm' }, { name: 'Server', value: 'server' })))
-    .addSubcommand(s => s.setName('watchlist').setDescription('Set watchlist visibility').addStringOption(o => o.setName('visibility').setRequired(true).addChoices({ name: 'Private', value: 'private' }, { name: 'Public', value: 'public' })))
+    .addSubcommand(s => s.setName('notification').setDescription('Set notification delivery').addStringOption(o => o.setName('type').setDescription('Notification type').setRequired(true).addChoices({ name: 'DM', value: 'dm' }, { name: 'Server', value: 'server' })))
+    .addSubcommand(s => s.setName('watchlist').setDescription('Set watchlist visibility').addStringOption(o => o.setName('visibility').setDescription('Visibility setting').setRequired(true).addChoices({ name: 'Private', value: 'private' }, { name: 'Public', value: 'public' })))
     .addSubcommand(s => s.setName('view').setDescription('View current preferences')),
 
   async execute(interaction) {
