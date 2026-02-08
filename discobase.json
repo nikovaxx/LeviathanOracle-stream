@@ -31,7 +31,7 @@
       "discobase.json",
       "UpcomingFeatures.md",
       "README.md",
-      "./data/localdb.db"
+      "localdb.db"
     ]
   }
 }
