@@ -6,8 +6,7 @@ const dbConfig = config.database.postgressql;
 if (!dbConfig?.enabled) {
   console.log('\x1b[36mℹ INFO\x1b[0m  │ PostgreSQL is disabled, using local database.');
   module.exports = { type: 'postgres', query: () => {}, getClient: () => {}, pool: null };
-  return;
-}
+} else {
 
 const pool = new Pool({
   ...dbConfig.config,
@@ -57,9 +56,10 @@ pool.query(`
   CREATE INDEX IF NOT EXISTS idx_role_notifications_next_airing ON role_notifications(next_airing_at);
 `).catch(err => console.error('PostgreSQL Init Error:', err.message));
 
-module.exports = {
-  type: 'postgres',
-  query: (text, params) => pool.query(text, params),
-  getClient: () => pool.connect(),
-  pool,
-};
+  module.exports = {
+    type: 'postgres',
+    query: (text, params) => pool.query(text, params),
+    getClient: () => pool.connect(),
+    pool,
+  };
+}

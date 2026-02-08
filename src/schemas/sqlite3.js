@@ -7,6 +7,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS watchlists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL,
+    discord_username TEXT,
     anime_id INTEGER NOT NULL,
     anime_title TEXT NOT NULL,
     next_airing_at INTEGER,
@@ -52,6 +53,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_role_notifications_guild ON role_notifications(guild_id);
   CREATE INDEX IF NOT EXISTS idx_role_notifications_next_airing ON role_notifications(next_airing_at);
 `);
+
+try { db.exec('ALTER TABLE watchlists ADD COLUMN discord_username TEXT'); } catch {}
 
 module.exports = {
   type: 'sqlite',
