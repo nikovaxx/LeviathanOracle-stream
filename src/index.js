@@ -27,9 +27,10 @@ const client = bot.getClient();
 // Start the bot
 bot.start();
 
-// Start the admin dashboard
-// NOTE: The admin dashboard runs on localhost:3000 by default
+const scheduler = require('./functions/notificationScheduler');
+
 client.once('clientReady', () => {
     const dashboardPath = path.join(__dirname, '../node_modules/discobase-core/admin/dashboard.js');
     require(dashboardPath)(client);
+    scheduler.initialize(client);
 });
