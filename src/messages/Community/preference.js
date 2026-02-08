@@ -3,6 +3,7 @@ const { embed } = require('../../functions/ui');
 
 module.exports = {
     disabled: false,
+    devOnly: true,
     name: 'preference',
     description: 'Manage your bot preferences',
     aliases: ['pref', 'settings'],

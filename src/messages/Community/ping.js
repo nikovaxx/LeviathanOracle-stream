@@ -1,41 +1,10 @@
 //! This is a basic structure for a prefix command in a discoBase using discord.js
 module.exports = {
     disabled: false,
-    //* Required: Command name, used to trigger the command. Example: !ping
     name: "ping",
-
-    //* Required: A brief description of what the command does, useful for help commands.
     description: "This is the ping command.",
-
-    //* Optional: Aliases are alternative names for the command. Example: !p will also trigger the ping command.
     aliases: ['p'],
 
-    //? Optional: Permissions that the bot requires to execute the command.
-    //? botPermissions: ['SendMessages'], // Example: bot needs permission to send messages.
-
-    //? Optional: Permissions that the user requires to use this command. Uncomment if needed.
-    //? userPermissions: ['ManageMessages'], // Example: Only users with Manage Messages permission can use this command.
-
-    //? Optional: Set this to true if only bot admins can use this command.
-    //? adminOnly: true,
-
-    //? Optional: Set this to true if only the bot owner can use this command.
-    //? ownerOnly: true,
-
-    //? Optional: Set this to true if only developers can use this command.
-    //? devOnly: true, so if this true this slash command will only register for the server IDs you provided in config.json
-
-    //? Optional: Cooldown period for the command in seconds to prevent spam.
-    //? cooldown: 10,
-
-
-    //? Optional: Useful for turning off buggy or incomplete commands without deleting the file.
-    //? disabled: true,
-
-    //? Optional: Only allow users with these role IDs to run this command
-    //? requiredRoles: ['1400100100176478330', '987654321098765432'],
-
-    // The run function is the main logic that gets executed when the command is called.
     async execute (message) {
         try {
             const ping = Date.now() - message.createdTimestamp;

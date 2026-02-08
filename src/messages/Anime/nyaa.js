@@ -3,6 +3,7 @@ const { embed } = require('../../functions/ui');
 
 module.exports = {
   disabled: false,
+  devOnly: true,
   name: 'nyaa',
   description: 'Search for English-translated anime on Nyaa',
   aliases: ['torrent'],

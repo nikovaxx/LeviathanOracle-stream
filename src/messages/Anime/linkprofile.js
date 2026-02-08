@@ -3,6 +3,7 @@ const { embed } = require('../../functions/ui');
 
 module.exports = {
   disabled: false,
+  devOnly: true,
   name: 'linkprofile',
   description: 'Link your MAL or AniList account',
   aliases: ['link'],

@@ -3,6 +3,7 @@ const { embed, ui } = require('../../functions/ui');
 
 module.exports = {
   disabled: false,
+  devOnly: true,
   name: 'upcoming',
   aliases: ['schedule'],
 

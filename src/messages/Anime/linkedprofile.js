@@ -5,6 +5,7 @@ const { embed } = require('../../functions/ui');
 
 module.exports = {
   disabled: false,
+  devOnly: true,
   name: 'linkedprofile',
   description: 'View your linked profile(s)',
   aliases: ['linked', 'myprofiles'],

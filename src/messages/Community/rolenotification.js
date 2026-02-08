@@ -5,6 +5,7 @@ const { embed } = require('../../functions/ui');
 
 module.exports = {
     disabled: false,
+    devOnly: true,
     name: 'rolenotification',
     description: 'Manage role-based anime notifications',
     aliases: ['rolenoti', 'rn'],
