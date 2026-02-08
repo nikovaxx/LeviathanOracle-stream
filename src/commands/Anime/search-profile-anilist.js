@@ -1,70 +1,57 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags } = require('discord.js');
 const { fetchAniListUser } = require('../../utils/querry');
-const { embed } = require('../../functions/ui');
+const { embed, ui } = require('../../functions/ui');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('search-profile-anilist')
     .setDescription('Fetch AniList user profile')
-    .addStringOption(opt => opt.setName('username').setDescription('AniList username').setRequired(true)),
+    .addStringOption(o => o.setName('username').setDescription('AniList username').setRequired(true)),
 
   async execute(interaction) {
     try {
-      const user = await fetchAniListUser(interaction.options.getString('username'));
-      if (!user) return interaction.reply('User not found.');
+      const u = await fetchAniListUser(interaction.options.getString('username'));
+      if (!u) return interaction.reply({ content: 'User not found.', flags: MessageFlags.Ephemeral });
 
-    const stats = user.statistics;
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('fav_anime').setLabel('Fav Anime').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('fav_manga').setLabel('Fav Manga').setStyle(ButtonStyle.Success)
-    );
+      const { anime: a, manga: m } = u.statistics;
+      const row = ui.row([
+        { id: 'fav_anime', label: 'Fav Anime', style: ButtonStyle.Primary },
+        { id: 'fav_manga', label: 'Fav Manga', style: ButtonStyle.Success }
+      ]);
 
-    const mainEmbed = embed({
-      title: `${user.name}'s Profile`,
-      url: `https://anilist.co/user/${user.name}`,
-      thumbnail: user.avatar.large,
-      fields: [
-        { name: 'Anime', value: `Count: ${stats.anime.count}\nScore: ${stats.anime.meanScore}\nDays: ${(stats.anime.minutesWatched / 1440).toFixed(1)}`, inline: true },
-        { name: 'Manga', value: `Count: ${stats.manga.count}\nChapters: ${stats.manga.chaptersRead}`, inline: true }
-      ],
-      color: 0x2e51a2
-    });
+      const msg = await interaction.reply({
+        components: [row], fetchReply: true,
+        embeds: [embed({
+          title: `${u.name}'s Profile`, url: `https://anilist.co/user/${u.name}`, thumbnail: u.avatar.large, color: 0x2e51a2,
+          fields: [
+            { name: 'Anime', value: `Count: ${a.count}\nScore: ${a.meanScore}\nDays: ${(a.minutesWatched / 1440).toFixed(1)}`, inline: true },
+            { name: 'Manga', value: `Count: ${m.count}\nChapters: ${m.chaptersRead}`, inline: true }
+          ]
+        })]
+      });
 
-    const msg = await interaction.reply({ embeds: [mainEmbed], components: [row], fetchReply: true });
-    const collector = msg.createMessageComponentCollector({ time: 60000 });
+      const col = msg.createMessageComponentCollector({ time: 60000 });
+      col.on('collect', async i => {
+        const type = i.customId.split('_')[1], list = u.favourites?.[type]?.nodes || [];
+        if (!list.length) return i.reply({ content: `No favorites.`, flags: MessageFlags.Ephemeral });
 
-    collector.on('collect', async i => {
-      const type = i.customId.split('_')[1]; // 'anime' or 'manga'
-      const list = user.favourites?.[type]?.nodes || [];
-      
-      if (!list.length) return i.reply({ content: `No favorite ${type} found.`, ephemeral: true });
+        const menu = new StringSelectMenuBuilder().setCustomId('sel').setPlaceholder(`Select ${type}`)
+          .addOptions(list.slice(0, 25).map(x => ({ label: x.title.romaji.slice(0, 100), value: String(x.id) })));
 
-      const menu = new StringSelectMenuBuilder()
-        .setCustomId(`select_${type}`)
-        .setPlaceholder(`Select a favorite ${type}`)
-        .addOptions(list.map(m => ({ label: m.title.romaji.slice(0, 100), value: m.id.toString() })));
+        const reply = await i.update({ components: [new ActionRowBuilder().addComponents(menu)], fetchReply: true });
+        const sel = await reply.awaitMessageComponent({ time: 30000 }).catch(() => null);
+        if (!sel) return;
 
-      const reply = await i.update({ components: [new ActionRowBuilder().addComponents(menu)], fetchReply: true });
-      
-      reply.awaitMessageComponent({ time: 30000 }).then(async sel => {
-        const item = list.find(m => m.id.toString() === sel.values[0]);
-        await sel.reply({ embeds: [embed({
-          title: item.title.romaji,
-          url: `https://anilist.co{type}/${item.id}`,
-          image: item.coverImage.large,
-          fields: [{ name: 'Score', value: `${item.averageScore || 'N/A'}%`, inline: true }],
-          color: 0x2e51a2
-        })], ephemeral: true });
-      }).catch(() => {});
-    });
-    } catch (error) {
-      console.error('Error in search-profile-anilist command:', error);
-      const errorMessage = { content: 'An error occurred while executing this command. Please try again later.', ephemeral: true };
-      if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply(errorMessage).catch(() => {});
-      } else if (interaction.deferred) {
-        await interaction.editReply(errorMessage).catch(() => {});
-      }
+        const item = list.find(x => String(x.id) === sel.values[0]);
+        sel.reply({ flags: MessageFlags.Ephemeral, embeds: [embed({
+          title: item.title.romaji, url: `https://anilist.co/${type}/${item.id}`, image: item.coverImage.large, color: 0x2e51a2,
+          fields: [{ name: 'Score', value: `${item.averageScore || 'N/A'}%`, inline: true }]
+        })]});
+      });
+    } catch (e) {
+      console.error(e);
+      const err = { content: 'Error fetching profile.', flags: MessageFlags.Ephemeral };
+      interaction.replied || interaction.deferred ? await interaction.editReply(err) : await interaction.reply(err);
     }
   }
 };

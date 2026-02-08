@@ -1,47 +1,29 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { fetchRSSFeedWithRetries, filterEnglishAnimeItems } = require('../../utils/nyaaRSS');
 const { embed } = require('../../functions/ui');
 
 module.exports = {
-  disabled: false,
   data: new SlashCommandBuilder()
     .setName('nyaa')
     .setDescription('Search for English-translated anime on Nyaa')
-    .addStringOption(option =>
-      option
-        .setName('query')
-        .setDescription('Search term (e.g. anime title)')
-        .setRequired(true)
-    ),
+    .addStringOption(o => o.setName('query').setDescription('Search term').setRequired(true)),
 
   async execute(interaction) {
+    await interaction.deferReply();
+    const query = interaction.options.getString('query');
+
     try {
-      await interaction.deferReply({ ephemeral: false });
-
-      const query = interaction.options.getString('query');
       const url = `https://nyaa.si/?page=rss&f=0&c=0_0&q=${encodeURIComponent(query)}`;
+      const items = filterEnglishAnimeItems((await fetchRSSFeedWithRetries(url)).items);
 
-      const feed = await fetchRSSFeedWithRetries(url);
-      const englishAnimeItems = filterEnglishAnimeItems(feed.items);
+      if (!items.length) return interaction.editReply(`No results found for "${query}".`);
 
-      if (englishAnimeItems.length === 0) {
-        return interaction.editReply(`No results found for "${query}".`);
-      }
-
-      const fields = englishAnimeItems.slice(0, 10).map((item, i) => ({
-        name: `${i + 1}. ${item.title}`,
-        value: item.link
-      }));
-
-      await interaction.editReply({ embeds: [embed({ title: `Search Results for "${query}"`, fields, color: 0x0099ff })] });
-    } catch (error) {
-      console.error('Error in nyaa command:', error);
-      const errorMessage = { content: 'An error occurred while executing this command. Please try again later.', ephemeral: true };
-      if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply(errorMessage).catch(() => {});
-      } else if (interaction.deferred) {
-        await interaction.editReply(errorMessage).catch(() => {});
-      }
+      const fields = items.slice(0, 10).map((item, i) => ({ name: `${i + 1}. ${item.title}`, value: item.link }));
+      await interaction.editReply({ embeds: [embed({ title: `Results: ${query}`, fields, color: 0x0099ff })] });
+    } catch (e) {
+      console.error(e);
+      const err = { content: 'Search failed.', flags: MessageFlags.Ephemeral };
+      interaction.replied || interaction.deferred ? await interaction.editReply(err) : await interaction.reply(err);
     }
-  },
+  }
 };

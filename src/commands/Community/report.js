@@ -1,87 +1,42 @@
-const { SlashCommandBuilder, TextInputStyle } = require('discord.js');
+const { SlashCommandBuilder, TextInputStyle, MessageFlags } = require('discord.js');
 const { modal, embed } = require('../../functions/ui');
-const config = require('../../../config.json');
+const { bot: { reportChannelId: chanId } } = require('../../../config.json');
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('report')
-    .setDescription('Report an issue or bug to the developers'),
+  data: new SlashCommandBuilder().setName('report').setDescription('Report a bug'),
 
   async execute(interaction) {
     try {
-      const reportModal = modal({
-        id: 'report_modal',
-        title: 'Report an Issue',
+      await interaction.showModal(modal({
+        id: 'rep', title: 'Report Issue',
         inputs: [
-          {
-            id: 'report_title',
-            label: 'Issue Title',
-            style: TextInputStyle.Short,
-            placeholder: 'Brief description of the issue',
-            minLength: 5,
-            maxLength: 100,
-            required: true
-          },
-          {
-            id: 'report_description',
-            label: 'Detailed Description',
-            style: TextInputStyle.Paragraph,
-            placeholder: 'Please describe the issue in detail...',
-            minLength: 20,
-            maxLength: 1000,
-            required: true
-          },
-          {
-            id: 'report_category',
-            label: 'Steps to Reproduce',
-            style: TextInputStyle.Paragraph,
-            placeholder: 'Steps to reproduce the issue...',
-            maxLength: 500,
-            required: false
-          }
+          { id: 't', label: 'Title', style: TextInputStyle.Short, minLength: 5, required: true },
+          { id: 'd', label: 'Description', style: TextInputStyle.Paragraph, minLength: 20, required: true },
+          { id: 's', label: 'Steps', style: TextInputStyle.Paragraph, required: false }
         ]
-      });
+      }));
 
-      await interaction.showModal(reportModal);
+      const i = await interaction.awaitModalSubmit({ filter: x => x.customId === 'rep', time: 300000 }).catch(() => null);
+      if (!i) return;
 
-      const submitted = await interaction.awaitModalSubmit({
-        filter: i => i.customId === 'report_modal' && i.user.id === interaction.user.id,
-        time: 300000
-      });
+      const chan = await interaction.client.channels.fetch(chanId).catch(() => null);
+      if (!chan) return i.reply({ content: 'Report channel error.', flags: MessageFlags.Ephemeral });
 
-      const title = submitted.fields.getTextInputValue('report_title');
-      const description = submitted.fields.getTextInputValue('report_description');
-      const steps = submitted.fields.getTextInputValue('report_category') || 'Not provided';
+      const [t, d, s] = ['t', 'd', 's'].map(f => i.fields.getTextInputValue(f));
 
-      const reportChannel = await interaction.client.channels.fetch(config.bot.reportChannelId);
-      
-      if (!reportChannel) {
-        return submitted.reply({ content: 'Report channel not found. Please set the channel ID in the config.json file.', ephemeral: true });
-      }
-
-      const date = new Date();
-      const formattedDate = `${date.getDate().toString().padStart(2, '0')}-${date.toLocaleString('en-US', { month: 'short' })}-${date.getFullYear().toString().slice(-2)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-
-      const reportEmbed = embed({
-        title: '🔧 New Bug Report',
+      await chan.send({ embeds: [embed({
+        title: '🔧 Bug Report', color: 0xff6b6b,
         fields: [
-          { name: 'Issue Title', value: title, inline: false },
-          { name: 'Description', value: description, inline: false },
-          { name: 'Steps to Reproduce', value: steps, inline: false },
-          { name: 'Reported By', value: `${interaction.user.tag} (${interaction.user.id})`, inline: true },
-          { name: 'Server', value: interaction.guild ? `${interaction.guild.name} (${interaction.guild.id})` : 'Direct Message', inline: true }
+          { name: 'Title', value: t }, { name: 'Description', value: d }, { name: 'Steps', value: s || 'N/A' },
+          { name: 'User', value: `${i.user.tag} (${i.user.id})`, inline: true },
+          { name: 'Context', value: i.guild ? `${i.guild.name}` : 'DM', inline: true }
         ],
-        color: 0xff6b6b,
-        footer: { text: `Bug Report System - ${formattedDate}` }
-      });
+        footer: { text: `Sent: ${new Date().toLocaleString()}` }
+      })]});
 
-      await reportChannel.send({ embeds: [reportEmbed] });
-      await submitted.reply({ content: 'Your report has been submitted successfully. Thank you!', ephemeral: true });
-    } catch (error) {
-      console.error('Error in report command:', error);
-      if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply({ content: 'An error occurred while processing your report. Please try again later.', ephemeral: true }).catch(() => {});
-      }
+      await i.reply({ content: 'Report submitted!', flags: MessageFlags.Ephemeral });
+    } catch (e) {
+      console.error(e);
     }
   }
 };

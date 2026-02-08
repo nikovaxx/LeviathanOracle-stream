@@ -1,68 +1,47 @@
-const { SlashCommandBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { fetchDailySchedule } = require('../../utils/anime-schedule');
 const { embed, ui } = require('../../functions/ui');
 
 module.exports = {
-  disabled: false,
-  data: new SlashCommandBuilder().setName('upcoming').setDescription('Show upcoming anime episodes'),
+  data: new SlashCommandBuilder().setName('upcoming').setDescription('Upcoming anime episodes'),
 
   async execute(interaction) {
     try {
-      const reply = await interaction.deferReply();
+      const msg = await interaction.deferReply();
       const days = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      const rows = [ui.row(days.slice(0, 4).map(d => ({ id: d, label: d, style: ButtonStyle.Primary }))), ui.row(days.slice(4).map(d => ({ id: d, label: d, style: ButtonStyle.Primary })))];
 
-    const dayRows = [
-      ui.row(days.slice(0, 4).map(d => ({ id: d, label: d, style: ButtonStyle.Primary }))),
-      ui.row(days.slice(4).map(d => ({ id: d, label: d, style: ButtonStyle.Primary })))
-    ];
+      await interaction.editReply({ content: 'Select a day:', components: rows });
+      const dClick = await msg.awaitMessageComponent({ time: 30000 }).catch(() => null);
+      if (!dClick) return interaction.editReply({ content: 'Timed out.', components: [] });
 
-    await interaction.editReply({ content: 'Select a day:', components: dayRows });
+      await dClick.update({ content: `Day: **${dClick.customId}**. Type:`, components: [ui.row(['Sub', 'Dub', 'Raw'].map(t => ({ id: t, label: t, style: ButtonStyle.Secondary })))] });
+      const tClick = await msg.awaitMessageComponent({ time: 30000 }).catch(() => null);
+      if (!tClick) return interaction.editReply({ content: 'Timed out.', components: [] });
 
-    const dayClick = await reply.awaitMessageComponent({ time: 30000 }).catch(() => null);
-    if (!dayClick) return interaction.editReply({ content: 'Timed out.', components: [] });
+      const data = await fetchDailySchedule(dClick.customId, tClick.customId);
+      if (!data?.length) return tClick.update({ content: 'No episodes found.', components: [] });
 
-    await dayClick.update({ content: `Day: **${dayClick.customId}**. Select type:`, components: [ui.row(['Sub', 'Dub', 'Raw'].map(t => ({ id: t, label: t, style: ButtonStyle.Secondary })))] });
-
-    const typeClick = await reply.awaitMessageComponent({ time: 30000 }).catch(() => null);
-    if (!typeClick) return interaction.editReply({ content: 'Timed out.', components: [] });
-
-    const animeData = await fetchDailySchedule(dayClick.customId, typeClick.customId);
-    if (!animeData?.length) return typeClick.update({ content: 'No episodes found.', components: [] });
-
-    let page = 1;
-    const total = Math.ceil(animeData.length / 10);
-
-    const getPage = () => {
-      const start = (page - 1) * 10;
-      const fields = animeData.slice(start, start + 10).map(a => ({
-        name: a.english || a.title,
-        value: `**Ep ${a.episodeNumber}** - <t:${Math.floor(new Date(a.episodeDate).getTime() / 1000)}:f>`
-      }));
-
-      return {
-        content: `Schedule for **${dayClick.customId}** (${typeClick.customId}):`,
-        embeds: [embed({ title: 'Upcoming Anime', fields, footer: `Page ${page}/${total} • ${typeClick.customId.toUpperCase()}` })],
+      let page = 1, total = Math.ceil(data.length / 10);
+      const getPage = () => ({
+        content: `Schedule: **${dClick.customId}** (${tClick.customId})`,
+        embeds: [embed({ 
+          title: 'Upcoming Anime', 
+          fields: data.slice((page - 1) * 10, page * 10).map(a => ({ name: a.english || a.title, value: `**Ep ${a.episodeNumber}** - <t:${Math.floor(new Date(a.episodeDate).getTime() / 1000)}:f>` })),
+          footer: `Page ${page}/${total}` 
+        })],
         components: [ui.pagination(page, total)]
-      };
-    };
+      });
 
-    await typeClick.update(getPage());
-
-    const collector = reply.createMessageComponentCollector({ time: 120000 });
-    collector.on('collect', async i => {
-      i.customId === 'prev' ? page-- : page++;
-      await i.update(getPage());
-    });
-
-    collector.on('end', () => interaction.editReply({ components: [] }).catch(() => {}));
-    } catch (error) {
-      console.error('Error in upcoming command:', error);
-      const errorMessage = { content: 'An error occurred while executing this command. Please try again later.', ephemeral: true };
-      if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply(errorMessage).catch(() => {});
-      } else if (interaction.deferred) {
-        await interaction.editReply(errorMessage).catch(() => {});
-      }
+      await tClick.update(getPage());
+      const col = msg.createMessageComponentCollector({ time: 120000 });
+      col.on('collect', i => { page += i.customId === 'prev' ? -1 : 1; i.update(getPage()); });
+      col.on('end', () => interaction.editReply({ components: [] }).catch(() => {}));
+      
+    } catch (e) {
+      console.error(e);
+      const err = { content: 'Error fetching schedule.', flags: MessageFlags.Ephemeral };
+      interaction.deferred ? interaction.editReply(err) : interaction.reply(err);
     }
   }
 };
