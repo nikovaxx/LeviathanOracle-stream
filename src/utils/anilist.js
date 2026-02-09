@@ -1,74 +1,53 @@
-import axios from 'axios';
+const axios = require('axios');
+const redis = require('../schemas/redis');
 
-const ANILIST_API_URL = 'https://graphql.anilist.co';
-// Fetch anime details
-export async function fetchAnimeDetails(search) {
-  const query = `
-    query ($search: String) {
-      Page(perPage: 10) {
-        media(search: $search, type: ANIME) {
-          id
-          title {
-            romaji
-            english
-            native
-          }
-          status
-          nextAiringEpisode {
-            airingAt
-            timeUntilAiring
-            episode
-          }
-          coverImage {
-            large
-          }
-        }
-      }
-    }
-  `;
+const API_URL = 'https://graphql.anilist.co';
+const TTL = 3600;
 
-  const variables = { search };
+/**
+ * Shared requester to handle Cache and API calls
+ */
+async function request(cacheKey, query, variables) {
+  if (redis.client) {
+    const cached = await redis.get(cacheKey).catch(() => null);
+    if (cached) return JSON.parse(cached);
+  }
 
   try {
-    const response = await axios.post(ANILIST_API_URL, { query, variables });
-    return response.data.data.Page.media; // Return an array of anime
-  } catch (error) {
-    console.error('Error fetching anime details:', error.response?.data || error.message);
-    throw error;
+    const { data: { data } } = await axios.post(API_URL, { query, variables });
+    const result = data.Media || data.Page.media;
+
+    if (redis.client && result) {
+      await redis.set(cacheKey, JSON.stringify(result), { EX: TTL }).catch(() => null);
+    }
+    return result;
+  } catch (err) {
+    console.error(`AniList Error [${cacheKey}]:`, err.response?.data || err.message);
+    return null;
   }
 }
 
-// Fetch anime details by ID
-export async function fetchAnimeDetailsById(id) {
-  const query = `
-    query ($id: Int) {
-      Media(id: $id, type: ANIME) {
-        id
-        title {
-          romaji
-          english
-          native
-        }
-        status
-        nextAiringEpisode {
-          airingAt
-          timeUntilAiring
-          episode
-        }
-        coverImage {
-          large
-        }
-      }
-    }
-  `;
+const MEDIA_FIELDS = `
+  id idMal title { romaji english native } status
+  nextAiringEpisode { airingAt timeUntilAiring episode }
+  coverImage { large }`;
 
-  const variables = { id };
+module.exports = {
+  fetchAnimeDetails: (search) => request(
+    `anime:search:${search.toLowerCase()}`,
+    `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${MEDIA_FIELDS} } } }`,
+    { search }
+  ),
 
-  try {
-    const response = await axios.post(ANILIST_API_URL, { query, variables });
-    return response.data.data.Media;
-  } catch (error) {
-    console.error('Error fetching anime details by ID:', error.response?.data || error.message);
-    throw error;
-  }
-}
+  fetchAnimeDetailsById: (id) => request(
+    `anime:id:${id}`,
+    `query ($id: Int) { Media(id: $id, type: ANIME) { ${MEDIA_FIELDS} } }`,
+    { id }
+  ),
+
+  fetchAnimeByMalId: (malId) => request(
+    `anime:mal:${malId}`,
+    `query ($malId: Int) { Media(idMal: $malId, type: ANIME) { ${MEDIA_FIELDS} } }`,
+    { malId }
+  )
+};
