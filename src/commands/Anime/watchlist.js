@@ -49,7 +49,10 @@ module.exports = {
         const { rowCount } = await db.query('SELECT 1 FROM watchlists WHERE user_id = $1 AND anime_id = $2', [userId, anime.id]);
         if (rowCount) return reply(interaction, 'Duplicate', 'Already in your list.', 'Yellow');
 
-        await insertAnime(userId, username, anime);
+        const inserted = await insertAnime(userId, username, anime);
+        if (!inserted) {
+          return reply(interaction, 'Error', 'Failed to add anime to your watchlist. Please try again later.', 'Red');
+        }
         return reply(interaction, 'Added', `**${anime.title.english || anime.title.romaji}** added!`, 'Green');
       }
 
