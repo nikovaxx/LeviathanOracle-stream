@@ -29,9 +29,10 @@
       ".git",
       ".gitignore",
       "discobase.json",
-      "UpcomingFeatures.md",
+      "Changelog.md",
       "README.md",
-      "localdb.db"
+      "localdb.db",
+      "NextUpdate.md"
     ]
   }
 }
