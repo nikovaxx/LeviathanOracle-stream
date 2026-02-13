@@ -23,7 +23,7 @@ async function insertAnime(userId, username, anime, titleFallback) {
 }
 
 module.exports = {
-  diabled: false,
+  disabled: false,
   data: new SlashCommandBuilder()
     .setName('watchlist')
     .setDescription('Manage your anime watchlist')
