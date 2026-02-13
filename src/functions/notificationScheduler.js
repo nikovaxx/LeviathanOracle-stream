@@ -74,7 +74,7 @@ async function send(entry, type) {
 
     const e = embed({
       title: `New Episode of ${a.title.english || a.title.romaji} Released!`,
-      desc: `Episode ${epNum} is now available!\nAired at: ${airedDate}. Remember that the episode might take some time depending on what platform you are watching.`,
+      desc: `Episode ${epNum} is now available!\nAired at: ${airedDate}. Remember that the episode might take some time depending on which platform you are watching on.`,
       thumbnail: a.coverImage?.large, color: '#0099ff',
       footer
     });
