@@ -10,3 +10,4 @@ config.json
 .github/
 localdb.db
 FetchTest.js
+NextUpdate.md

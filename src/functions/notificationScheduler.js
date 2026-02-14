@@ -5,6 +5,8 @@ const { fetchAnimeDetailsById } = require('../utils/anilist');
 
 let bot = null;
 const jobs = { user: new Map(), role: new Map() };
+const inFlight = { user: new Set(), role: new Set() };
+let cronRunning = false;
 
 async function poll(ts) {
   if (ts) {
@@ -27,7 +29,17 @@ async function initialize(client) {
   const roles = await db.query('SELECT * FROM role_notifications WHERE next_airing_at > $1', [Date.now()]);
   roles.rows.forEach(r => schedule(r, 'role'));
 
-  cron.schedule('0 * * * *', async () => { await catchMissed(); await updateSchedules(); await poll(Date.now()); });
+  cron.schedule('0 * * * *', async () => {
+    if (cronRunning) return;
+    cronRunning = true;
+    try {
+      await catchMissed();
+      await updateSchedules();
+      await poll(Date.now());
+    } finally {
+      cronRunning = false;
+    }
+  });
   await poll(Date.now());
 }
 
@@ -49,14 +61,22 @@ function schedule(entry, type) {
 }
 
 async function send(entry, type) {
+  if (inFlight[type].has(entry.id)) return;
+  inFlight[type].add(entry.id);
   try {
     const a = await fetchAnimeDetailsById(entry.anime_id);
     if (!a) return;
 
+    const epNum = a.nextAiringEpisode?.episode - 1 || 'Latest';
+    const airedDate = new Date(entry.next_airing_at).toUTCString();
+    const now = new Date();
+    const footer = `Episode just released! · ${String(now.getDate()).padStart(2,'0')}-${now.toLocaleString('en-US',{month:'short'})}-${String(now.getFullYear()).slice(-2)} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
     const e = embed({
-      title: `Released: ${a.title.english || a.title.romaji}`,
-      desc: `**Episode ${a.nextAiringEpisode?.episode - 1 || 'Latest'}** is out!\n\n<t:${Math.floor(entry.next_airing_at / 1000)}:R>`,
-      thumbnail: a.coverImage?.large, color: '#0099ff'
+      title: `New Episode of ${a.title.english || a.title.romaji} Released!`,
+      desc: `Episode ${epNum} is now available!\nAired at: ${airedDate}. Remember that the episode might take some time depending on which platform you are watching on.`,
+      thumbnail: a.coverImage?.large, color: '#0099ff',
+      footer
     });
 
     if (type === 'user') {
@@ -83,6 +103,9 @@ async function send(entry, type) {
       schedule({ ...entry, next_airing_at: next }, type);
     }
   } catch (err) { console.error(`Error [${type} ${entry.id}]:`, err.message); }
+  finally {
+    inFlight[type].delete(entry.id);
+  }
 }
 
 async function updateSchedules() {
