@@ -1,96 +1,42 @@
-import axios from 'axios';
+const axios = require('axios');
+const redis = require('../schemas/redis');
 
-const anilistAPI = 'https://graphql.anilist.co';
+const API_URL = 'https://graphql.anilist.co';
+const TTL = 900; // 15 minutes
 
-export async function fetchAniListUser(username) {
-  const query = `
-    query ($username: String) {
-      User(name: $username) {
-        id
-        name
-        about
-        avatar {
-          large
-        }
-        statistics {
-          anime {
-            count
-            meanScore
-            minutesWatched
-          }
-          manga {
-            count
-            chaptersRead
-            volumesRead
-          }
-        }
-        favourites {
-          anime {
-            nodes {
-              id
-              title {
-                romaji
-                english
-              }
-              averageScore
-              coverImage {
-                large
-              }
-            }
-          }
-          manga {
-            nodes {
-              id
-              title {
-                romaji
-                english
-              }
-              averageScore
-              coverImage {
-                large
-              }
-            }
-          }
-        }
-      }        
-    }
-  `;
-
-  const variables = { username };
+async function request(cacheKey, query, variables) {
+  if (redis.client) {
+    const cached = await redis.get(cacheKey).catch(() => null);
+    if (cached) return JSON.parse(cached);
+  }
 
   try {
-    const response = await axios.post(anilistAPI, { query, variables });
-    return response.data.data.User;
-  } catch (error) {
-    console.error('AniList API Error:', error);
+    const { data: { data } } = await axios.post(API_URL, { query, variables });
+    if (redis.client && data.User) {
+      await redis.set(cacheKey, JSON.stringify(data.User), { EX: TTL }).catch(() => null);
+    }
+    return data.User;
+  } catch (err) {
+    console.error(`AniList User Error [${variables.username}]:`, err.message);
     return null;
   }
 }
 
-export async function fetchMangaDetails(mangaTitle) {
-  const query = `
-    query ($search: String) {
-      Media(search: $search, type: MANGA) {
-        id
-        title {
-          romaji
-          english
-        }
-        coverImage {
-          large
-        }
-        chapters
+const USER_QUERY = `
+  query ($username: String) {
+    User(name: $username) {
+      id name about avatar { large }
+      statistics {
+        anime { count meanScore minutesWatched }
+        manga { count chaptersRead volumesRead }
+      }
+      favourites {
+        anime { nodes { id title { romaji english } averageScore coverImage { large } } }
+        manga { nodes { id title { romaji english } averageScore coverImage { large } } }
       }
     }
-  `;
+  }`;
 
-  const variables = { search: mangaTitle };
-
-  try {
-    const response = await axios.post(anilistAPI, { query, variables });
-    return response.data.data.Media;
-  } catch (error) {
-    console.error('AniList API Error:', error);
-    return null;
-  }
-}
+module.exports = {
+  fetchAniListUser: (username) => request(`anilist:user:${username.toLowerCase()}`, USER_QUERY, { username })
+};

@@ -1,0 +1,38 @@
+{
+  "errorLogging": {
+    "enabled": true
+  },
+  "presence": {
+    "enabled": true,
+    "status": "online",
+    "interval": 300000,
+    "type": "WATCHING",
+    "names": [
+      "Anime News",
+      "LeviathanOracle v3.1.1"
+    ],
+    "//_streamingUrl_note": "!=! This is only for the STREAMING activity type !=!",
+    "streamingUrl": "https://www.twitch.tv/example",
+    "//_customState_note": "!=! This is only for the CUSTOM activity type !=!",
+    "customState": "LeviathanOracle v3.1.1"
+  },
+  "commandStats": {
+    "enabled": true,
+    "trackUsage": true,
+    "trackServers": true,
+    "trackUsers": true
+  },
+  "activityTracker": {
+    "enabled": true,
+    "ignoredPaths": [
+      "**/node_modules/**",
+      ".git",
+      ".gitignore",
+      "discobase.json",
+      "Changelog.md",
+      "README.md",
+      "localdb.db",
+      "NextUpdate.md"
+    ]
+  }
+}
