@@ -126,7 +126,7 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 | `/watchlist add <title>` | Add anime to your watchlist (autocomplete supported) |
 | `/watchlist remove <title>` | Remove anime from your watchlist |
 | `/watchlist view` | View your watchlist |
-| `/watchlist show <@User\|UserId>` | View others' public watchlists |
+| `/watchlist view <@User\|UserId>` | View others' public watchlists |
 | `/watchlist export` | Export your current watchlist |
 | `/watchlist import` | Import your current watchlist |
 | `/linkprofile mal <username>` | Link your MyAnimeList account |
