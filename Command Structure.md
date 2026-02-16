@@ -1,4 +1,4 @@
-## Command Module Structure (V2)
+## Command Module Structure
 
 ### Shared Export Properties (Slash & Prefix)
 
@@ -101,3 +101,4 @@ module.exports = {
 - Always keep command files minimal and only export what is needed for the command system to function.
 
 ---
+
