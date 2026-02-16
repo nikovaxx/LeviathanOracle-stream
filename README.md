@@ -1,8 +1,8 @@
 # LeviathanOracle
 
-A Discord bot built to manage anime watchlists, link user profiles from MyAnimeList and AniList, search for anime/manga details, and fetch English-translated anime from Nyaa. The idea for this bot was given by my friend [baku](https://github.com/maiorikizu) and brought to life by me [Pilot_kun](https://github.com/PilotKun) and [Niko](https://github.com/nikovaxx).
+A Discord bot built to manage anime watchlists, link user profiles from MyAnimeList and AniList, search for anime/manga details, and fetch English-translated anime from Nyaa. The idea for this bot was given by my friend [baku](https://github.com/maiorikizu) and brought to life by me [Pilot_kun](https://github.com/PilotKun).
 
-New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
+New file structure and full code rewrite by [Niko](https://github.com/nikovaxx).
 
 ### Features
 
@@ -60,9 +60,9 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
     "reportChannelId": "REPORT_CHANNEL_ID_HERE"
   },
   "database": {
-    "mongodbUrl": "MONGODB_URL_HERE",
+    "mongodbUrl": "MONGODB_URL_HERE",  Put valid mongo url here if you have one
     "postgressql": {
-      "enabled": false,
+      "enabled": false,  Set to true and put proper credentials if you have a server
       "config": {
         "host": "host",
         "port": 5432,
@@ -72,7 +72,7 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
       }
     },
     "redis": {
-      "enabled": false,
+      "enabled": false,  Set to true and put proper credentials if you have a server
       "config": {
         "host": "host",
         "port": 6379,
