@@ -38,7 +38,7 @@ New file structure and full code rewrite by [Niko](https://github.com/nikovaxx).
 
 3. **Configure environment**
    - Create a json file `config.json`
-   - SQLite3 is used by default. If you want PostgreSQL and/or Redis, enable them in your config.
+   - SQLite3 is used by default. If you want PostgreSQL and/or MongoDb, enable them in your config. If you want caching enable redis in the config.
    - Copy `example-config.json` to `config.json`
    - Fill in your credentials
 ```json
