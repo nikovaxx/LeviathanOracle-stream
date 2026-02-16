@@ -1,27 +1,19 @@
-# LeviathanOracle V3
+# LeviathanOracle
 
 A Discord bot built to manage anime watchlists, link user profiles from MyAnimeList and AniList, search for anime/manga details, and fetch English-translated anime from Nyaa. The idea for this bot was given by my friend [baku](https://github.com/maiorikizu) and brought to life by me [Pilot_kun](https://github.com/PilotKun) and [Niko](https://github.com/nikovaxx).
 
 New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 
-## New in V3
-
-### Core Changes
-
-- Rewritten command system with a clean structure (`commands/`, `messages/`, `events/`, `functions/`, `schemas/`, `utils/`).
-- Unified database layer with SQLite3 as the default local database and optional PostgreSQL & MongoDB support.
-- Optional Redis caching layer for better API performance.
-- Shared UI helper system for embeds/components/modals.
-- Improved reliability: consistent error handling across commands.
-
 ### Features
 
-- Anime watchlist (add/remove/show) with scheduling support.
+- Anime watchlist (add/remove/view) with scheduling support.
 - Link and view profiles (MyAnimeList + AniList).
 - Search anime/manga details (Jikan/MAL) and browse upcoming episodes.
 - Nyaa RSS search for English-translated releases.
 - Notification system upgrades: user preferences + role-based notifications.
 - Built-in `/report` system.
+- Unified database layer with SQLite3 as the default local database and optional PostgreSQL & MongoDB support.
+- Optional Redis caching layer for better API performance.
 
 ## Prerequisites
 
@@ -116,51 +108,6 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
    node .\src\index.js
    ```
    - Commands are automatically registered on startup
-
-## Commands
-
-### Slash Commands
-
-| Command | Description |
-|--------|-------------|
-| `/watchlist add <title>` | Add anime to your watchlist (autocomplete supported) |
-| `/watchlist remove <title>` | Remove anime from your watchlist |
-| `/watchlist view` | View your watchlist |
-| `/watchlist view <@User\|UserId>` | View others' public watchlists |
-| `/watchlist export` | Export your current watchlist |
-| `/watchlist import` | Import your current watchlist |
-| `/linkprofile mal <username>` | Link your MyAnimeList account |
-| `/linkprofile anilist <username>` | Link your AniList account |
-| `/linkedprofile` | View your linked profile(s) |
-| `/search-anime <anime>` | Search anime details (Jikan / MyAnimeList) |
-| `/search-manga <manga>` | Search manga details (Jikan / MyAnimeList) |
-| `/search-profile-mal <username>` | View a MyAnimeList profile |
-| `/search-profile-anilist <username>` | View an AniList profile |
-| `/upcoming` | Browse upcoming episodes (interactive day/type selection) |
-| `/nyaa <query>` | Search Nyaa for English-translated anime releases |
-| `/ping` | Check bot latency |
-| `/preference notification <dm\|server>` | Set how you receive notifications |
-| `/preference watchlist <private\|public>` | Set watchlist visibility |
-| `/preference view` | View your current preferences |
-| `/rolenotification add <role> <anime>` | Subscribe a role to an anime (Manage Roles required) |
-| `/rolenotification remove <role> <anime>` | Unsubscribe a role from an anime |
-| `/rolenotification list [role]` | List role-based notifications (optionally filter by role) |
-| `/report` | Submit a bug report via modal to the configured report channel |
-
-### Prefix Commands
-
-The default prefix is configurable in `config.json`.
-Aliases can also be used for ease ouf use.
-
-| Command | Description |
-|--------|-------------|
-| `!upcoming <day> [type]` | View upcoming episodes (alias: `!schedule`) |
-| `!nyaa <query>` | Search Nyaa releases (alias: `!torrent`) |
-| `!linkprofile <mal\|anilist> <username>` | Link MAL/AniList account (alias: `!link`) |
-| `!linkedprofile` | View linked accounts (aliases: `!linked`, `!myprofiles`) |
-| `!ping` | Check latency (alias: `!p`) |
-| `!preference <notification\|watchlist\|view> [value]` | Manage preferences (aliases: `!pref`, `!settings`) |
-| `!rolenotification <add\|remove\|list> <@role> [anime]` | Manage role notifications (aliases: `!rolenoti`, `!rn`) |
 
 ## Development
 
