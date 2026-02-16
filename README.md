@@ -60,7 +60,7 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
     "reportChannelId": "REPORT_CHANNEL_ID_HERE"
   },
   "database": {
-    "mongodbUrl": "MONGODB_URL_HERE",  LEAVE IT BLANK in the actual config file to avoid errors
+    "mongodbUrl": "MONGODB_URL_HERE",
     "postgressql": {
       "enabled": false,
       "config": {
