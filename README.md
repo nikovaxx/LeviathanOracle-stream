@@ -118,6 +118,11 @@ npm run dev
 # Production mode
 npm start
 ```
+# Reference & Acknowledgements
+
+- [AniList GraphQL API](https://docs.anilist.co/)  
+- [Jikan API for MyAnimeList](https://jikan.moe/)  
+- [Nyaa Torrent RSS](https://nyaa.si)
 
 ## License
 
