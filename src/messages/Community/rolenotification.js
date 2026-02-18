@@ -1,5 +1,5 @@
 const db = require('../../schemas/db');
-const { fetchAnimeDetails, fetchAnimeDetailsById } = require('../../utils/anilist');
+const { searchAnimeAniList, getAnimeByAniListId } = require('../../utils/API-services');
 const scheduler = require('../../functions/notificationScheduler');
 const { embed } = require('../../functions/ui');
 
@@ -31,7 +31,7 @@ module.exports = {
                 const animeQuery = args.slice(2).join(' ');
                 if (!animeQuery) return message.reply('Provide an anime title or ID.');
 
-                const data = /^\d+$/.test(animeQuery) ? await fetchAnimeDetailsById(animeQuery) : await fetchAnimeDetails(animeQuery);
+                const data = /^\d+$/.test(animeQuery) ? await getAnimeByAniListId(animeQuery) : await searchAnimeAniList(animeQuery);
                 const anime = Array.isArray(data) ? data[0] : data;
 
                 if (!anime) return message.reply({ embeds: [embed({ title: 'Not Found', desc: 'Anime not found.', color: 'Red' })] });

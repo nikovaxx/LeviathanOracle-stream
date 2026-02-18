@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, MessageFlags, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags, AttachmentBuilder, InteractionContextType } = require('discord.js');
 const db = require('../../schemas/db');
-const { fetchAnimeDetails, fetchAnimeDetailsById, fetchAnimeByMalId } = require('../../utils/anilist');
+const { searchAnimeAniList, getAnimeByAniListId, getAnimeByMalId } = require('../../utils/API-services');
 const { bestMatch } = require('../../utils/fuzzy');
 const scheduler = require('../../functions/notificationScheduler');
 const { embed } = require('../../functions/ui');
@@ -27,6 +27,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('watchlist')
     .setDescription('Manage your anime watchlist')
+    .setContexts(InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel)
     .addSubcommand(s => s.setName('add').setDescription('Add anime').addStringOption(o => o.setName('title').setDescription('Anime title to add').setRequired(true).setAutocomplete(true)))
     .addSubcommand(s => s.setName('remove').setDescription('Remove anime').addStringOption(o => o.setName('title').setDescription('Anime title to remove').setRequired(true)))
     .addSubcommand(s => s.setName('view').setDescription('View a user\'s watchlist').addUserOption(o => o.setName('user').setDescription('User to view (leave empty for your own)')))
@@ -41,7 +42,7 @@ module.exports = {
       if (sub === 'add') {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const input = interaction.options.getString('title');
-        const data = /^\d+$/.test(input) ? await fetchAnimeDetailsById(input) : await fetchAnimeDetails(input);
+        const data = /^\d+$/.test(input) ? await getAnimeByAniListId(input) : await searchAnimeAniList(input);
         const anime = Array.isArray(data) ? data[0] : data;
 
         if (!anime) return reply(interaction, 'Not Found', 'Anime not found.', 'Red');
@@ -114,7 +115,7 @@ module.exports = {
           const ids = fileContent.match(/<series_animedb_id>(\d+)<\/series_animedb_id>/g) || [];
           for (const tag of ids) {
             const malId = parseInt(tag.match(/(\d+)/)[1]);
-            const anime = await fetchAnimeByMalId(malId);
+            const anime = await getAnimeByMalId(malId);
             (await insertAnime(userId, username, anime, `MAL#${malId}`)) ? imported++ : skipped++;
           }
         } else {
@@ -123,7 +124,7 @@ module.exports = {
           if (!Array.isArray(entries)) return reply(interaction, 'Error', 'Invalid export format.', 'Red');
 
           for (const entry of entries) {
-            const anime = await fetchAnimeDetailsById(entry.anilistId);
+            const anime = await getAnimeByAniListId(entry.anilistId);
             (await insertAnime(userId, username, anime || { id: entry.anilistId }, entry.title)) ? imported++ : skipped++;
           }
         }
@@ -141,7 +142,7 @@ module.exports = {
   async autocomplete(interaction) {
     const value = interaction.options.getFocused();
     if (!value) return interaction.respond([]);
-    const results = (await fetchAnimeDetails(value)) || [];
+    const results = (await searchAnimeAniList(value)) || [];
     const ranked = bestMatch(value, results, a => [a.title?.english, a.title?.romaji, a.title?.native]);
     await interaction.respond(
       (ranked.length ? ranked : results).slice(0, 25).map(a => ({ name: (a.title.english || a.title.romaji).substring(0, 100), value: String(a.id) }))

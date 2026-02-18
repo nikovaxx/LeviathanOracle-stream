@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags, InteractionContextType } = require('discord.js');
 const db = require('../../schemas/db');
-const { fetchAnimeDetails, fetchAnimeDetailsById } = require('../../utils/anilist');
+const { searchAnimeAniList, getAnimeByAniListId } = require('../../utils/API-services');
 const { bestMatch } = require('../../utils/fuzzy');
 const scheduler = require('../../functions/notificationScheduler');
 const { embed } = require('../../functions/ui');
@@ -9,6 +9,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('rolenotification')
     .setDescription('Manage role-based anime notifications')
+    .setContexts(InteractionContextType.Guild)
     .addSubcommand(s => s.setName('add').setDescription('Add notification').addRoleOption(o => o.setName('role').setDescription('Role to notify').setRequired(true)).addStringOption(o => o.setName('anime').setDescription('Anime to track').setRequired(true).setAutocomplete(true)))
     .addSubcommand(s => s.setName('remove').setDescription('Remove notification').addRoleOption(o => o.setName('role').setDescription('Role to remove from').setRequired(true)).addStringOption(o => o.setName('anime').setDescription('Anime to stop tracking').setRequired(true)))
     .addSubcommand(s => s.setName('list').setDescription('List notifications').addRoleOption(o => o.setName('role').setDescription('Filter by role'))),
@@ -20,7 +21,7 @@ module.exports = {
     try {
       if (sub === 'add') {
         const role = interaction.options.getRole('role'), input = interaction.options.getString('anime');
-        const res = await (/^\d+$/.test(input) ? fetchAnimeDetailsById(input) : fetchAnimeDetails(input));
+        const res = await (/^\d+$/.test(input) ? getAnimeByAniListId(input) : searchAnimeAniList(input));
         const a = Array.isArray(res) ? res[0] : res;
 
         if (!a) return interaction.editReply('Anime not found.');
@@ -60,7 +61,7 @@ module.exports = {
   async autocomplete(interaction) {
     const val = interaction.options.getFocused();
     if (!val) return interaction.respond([]);
-    const res = await fetchAnimeDetails(val);
+    const res = await searchAnimeAniList(val);
     const results = res || [];
     const ranked = bestMatch(val, results, a => [a.title?.english, a.title?.romaji, a.title?.native]);
     const out = (ranked.length ? ranked : results)

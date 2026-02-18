@@ -1,9 +1,12 @@
-const { SlashCommandBuilder, ButtonStyle, MessageFlags } = require('discord.js');
-const { fetchDailySchedule } = require('../../utils/anime-schedule');
+const { SlashCommandBuilder, ButtonStyle, MessageFlags, InteractionContextType } = require('discord.js');
+const { getDailySchedule } = require('../../utils/API-services');
 const { embed, ui } = require('../../functions/ui');
 
 module.exports = {
-  data: new SlashCommandBuilder().setName('upcoming').setDescription('Upcoming anime episodes'),
+  data: new SlashCommandBuilder()
+    .setName('upcoming')
+    .setDescription('Upcoming anime episodes')
+    .setContexts(InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel),
 
   async execute(interaction) {
     try {
@@ -19,7 +22,7 @@ module.exports = {
       const tClick = await msg.awaitMessageComponent({ time: 30000 }).catch(() => null);
       if (!tClick) return interaction.editReply({ content: 'Timed out.', components: [] });
 
-      const data = await fetchDailySchedule(dClick.customId, tClick.customId);
+      const data = await getDailySchedule(dClick.customId, tClick.customId);
       if (!data?.length) return tClick.update({ content: 'No episodes found.', components: [] });
 
       let page = 1, total = Math.ceil(data.length / 10);

@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const db = require('../schemas/db');
 const { embed } = require('./ui');
-const { fetchAnimeDetailsById } = require('../utils/anilist');
+const { getAnimeByAniListId } = require('../utils/API-services');
 
 let bot = null;
 const jobs = { user: new Map(), role: new Map() };
@@ -64,13 +64,12 @@ async function send(entry, type) {
   if (inFlight[type].has(entry.id)) return;
   inFlight[type].add(entry.id);
   try {
-    const a = await fetchAnimeDetailsById(entry.anime_id);
+    const a = await getAnimeByAniListId(entry.anime_id);
     if (!a) return;
 
     const epNum = a.nextAiringEpisode?.episode - 1 || 'Latest';
     const airedDate = new Date(entry.next_airing_at).toUTCString();
-    const now = new Date();
-    const footer = `Episode just released! · ${String(now.getDate()).padStart(2,'0')}-${now.toLocaleString('en-US',{month:'short'})}-${String(now.getFullYear()).slice(-2)} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const footer = `Episode just released!`;
 
     const e = embed({
       title: `New Episode of ${a.title.english || a.title.romaji} Released!`,
@@ -113,7 +112,7 @@ async function updateSchedules() {
   for (const [type, table] of Object.entries(tables)) {
     const { rows } = await db.query(`SELECT * FROM ${table} WHERE next_airing_at IS NOT NULL`);
     for (const row of rows) {
-      const a = await fetchAnimeDetailsById(row.anime_id);
+      const a = await getAnimeByAniListId(row.anime_id);
       const next = a?.nextAiringEpisode?.airingAt * 1000;
       if (next && next !== row.next_airing_at) {
         await db.query(`UPDATE ${table} SET next_airing_at = $1 WHERE id = $2`, [next, row.id]);
