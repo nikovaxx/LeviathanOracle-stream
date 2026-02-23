@@ -148,6 +148,7 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 | `/rolenotification remove <role> <anime>` | Unsubscribe a role from an anime |
 | `/rolenotification list [role]` | List role-based notifications (optionally filter by role) |
 | `/report` | Submit a bug report via modal to the configured report channel |
+| `/help` | Help command |
 
 ### Prefix Commands
 
