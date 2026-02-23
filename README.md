@@ -136,7 +136,9 @@ New file structure and code rewrite by [Niko](https://github.com/nikovaxx).
 | `/search-manga <manga>` | Search manga details (Jikan / MyAnimeList) |
 | `/search-profile-mal <username>` | View a MyAnimeList profile |
 | `/search-profile-anilist <username>` | View an AniList profile |
-| `/upcoming` | Browse upcoming episodes (interactive day/type selection) |
+| `/upcoming <week>` | Browse upcoming episodes (interactive day/type selection) |
+| `/upcoming <tomorrow>` | Browse upcoming episodes of the next day |
+| `/upcoming <watchlist>` | Browse upcoming episodes of entires in your watchlist |
 | `/nyaa <query>` | Search Nyaa for English-translated anime releases |
 | `/ping` | Check bot latency |
 | `/preference notification <dm\|server>` | Set how you receive notifications |
