@@ -15,6 +15,8 @@ New file structure and full code rewrite by [Niko](https://github.com/nikovaxx).
 - Unified database layer with SQLite3 as the default local database and optional PostgreSQL & MongoDB support.
 - Optional Redis caching layer for better API performance.
 
+[All commands & description can be found here](https://github.com/nikovaxx/LeviathanOracle-stream/blob/v3/Command%20List.md)
+
 ## Prerequisites
 
 - Node.js v18 or higher
@@ -60,7 +62,7 @@ New file structure and full code rewrite by [Niko](https://github.com/nikovaxx).
     "reportChannelId": "REPORT_CHANNEL_ID_HERE"
   },
   "database": {
-    "mongodbUrl": "MONGODB_URL_HERE",  Put valid mongo url here if you have one
+    "mongodbUrl": "MONGODB_URL_HERE",  Put valid mongodb url here if you have one
     "postgressql": {
       "enabled": false,  Set to true and put proper credentials if you have a server
       "config": {

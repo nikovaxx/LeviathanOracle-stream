@@ -28,11 +28,9 @@
 | `/rolenotification list [role]` | List role-based notifications (optionally filter by role) |
 | `/report` | Submit a bug report via modal to the configured report channel |
 
+## $\color{hsl(0,100%,50%)}{\textsf{PREFIX COMMANDS ARE DISABLED TEMPORARILY!!}}$
 ### Prefix Commands
 
-```json
-PREFIX COMMANDS ARE DISABLED TEMPORARILY!!
-```
 The default prefix is configurable in `config.json`.
 Aliases can also be used for ease ouf use.
 
