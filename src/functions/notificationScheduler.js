@@ -29,7 +29,7 @@ async function initialize(client) {
   const roles = await db.query('SELECT * FROM role_notifications WHERE next_airing_at > $1', [Date.now()]);
   roles.rows.forEach(r => schedule(r, 'role'));
 
-  cron.schedule('0 * * * *', async () => {
+  cron.schedule('0 */8 * * *', async () => {
     if (cronRunning) return;
     cronRunning = true;
     try {
