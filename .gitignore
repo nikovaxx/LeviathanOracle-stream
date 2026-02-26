@@ -11,3 +11,4 @@ config.json
 localdb.db
 FetchTest.js
 NextUpdate.md
+errors/
