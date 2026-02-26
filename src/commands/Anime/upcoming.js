@@ -6,9 +6,6 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('upcoming')
     .setDescription('Upcoming anime episodes')
-<<<<<<< HEAD
-    .setContexts(InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel),
-=======
     .addStringOption(option =>
       option
         .setName('filter')
@@ -20,7 +17,6 @@ module.exports = {
           { name: 'Watchlist', value: 'watchlist' }
         )
     ),
->>>>>>> c5837a29f275433c131bc99759e61b95dab2e0a2
 
   async execute(interaction) {
     const filter = interaction.options.getString('filter');
@@ -41,10 +37,6 @@ module.exports = {
           return;
         }
 
-<<<<<<< HEAD
-      const data = await getDailySchedule(dClick.customId, tClick.customId);
-      if (!data?.length) return tClick.update({ content: 'No episodes found.', components: [] });
-=======
         let page = 1, total = Math.ceil(data.length / 10);
         const getPage = () => ({
           content: `Schedule: **${dayName}** (Tomorrow)`,
@@ -55,7 +47,6 @@ module.exports = {
           })],
           components: [ui.pagination(page, total)]
         });
->>>>>>> c5837a29f275433c131bc99759e61b95dab2e0a2
 
         await interaction.editReply(getPage());
         const col = msg.createMessageComponentCollector({ time: 120000 });
