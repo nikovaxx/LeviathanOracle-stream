@@ -4,10 +4,10 @@ const config = require('../../config.json');
 
 const JIKAN = 'https://api.jikan.moe/v4';
 const ANILIST = 'https://graphql.anilist.co';
-const SCHEDULE = 'https://animeschedule.net/api/v3';
+const ANIMESCHEDULE = 'https://animeschedule.net/api/v3';
 const SCHEDULE_KEY = config.apitokens.animeschedule;
 
-const TTL = { search: 900, details: 3600, schedule: 300, profile: 900 };
+const TTL = { search: 1800, details: 21600, schedule: 900, profile: 3600 };
 
 async function cached(key, ttl, fetcher) {
   if (redis.client) {
@@ -30,7 +30,7 @@ async function anilistPost(query, variables) {
 }
 
 async function scheduleRequest(type) {
-  const { data } = await axios.get(`${SCHEDULE}/timetables/${type}`, {
+  const { data } = await axios.get(`${ANIMESCHEDULE}/timetables/${type}`, {
     headers: { Authorization: `Bearer ${SCHEDULE_KEY}` }, timeout: 5000
   });
   return data || [];
@@ -205,29 +205,10 @@ const getAniListUser = (username) => cached(
   () => anilistPost(`query($u:String){User(name:$u){${USER_FIELDS}}}`, { u: username }).then(d => d.User)
 );
 
-// --- Profile Verification ---
-
-async function verifyMALUser(username) {
-  try {
-    const user = await jikanGet(`users/${username}`);
-    return user ? { valid: true, username: user.username, url: user.url } : { valid: false };
-  } catch { return { valid: false }; }
-}
-
-async function verifyAniListUser(username) {
-  try {
-    const user = await anilistPost(
-      `query($u:String){User(name:$u){id name}}`, { u: username }
-    ).then(d => d.User);
-    return user ? { valid: true, username: user.name, url: `https://anilist.co/user/${user.name}` } : { valid: false };
-  } catch { return { valid: false }; }
-}
-
 module.exports = {
   searchAnime, getAnimeDetails,
   getAnimeByAniListId, getAnimeByMalId, searchAnimeAniList,
   searchManga, getMangaDetails,
   getSchedule, getDailySchedule, getNextEpisode,
   getMALUser, getMALUserStats, getMALUserFavorites, getAniListUser,
-  verifyMALUser, verifyAniListUser,
 };
