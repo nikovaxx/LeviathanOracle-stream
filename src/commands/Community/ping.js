@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, MessageFlags, InteractionContextType } = require('discord.js');
 
 module.exports = {
-    disabled: false,
     data: new SlashCommandBuilder()
         .setName('ping')
         .setDescription('This is the ping command.')
