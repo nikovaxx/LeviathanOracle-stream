@@ -1,6 +1,6 @@
 {
   "name": "leviathanoracle",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "A Discord bot for managing anime watchlists with real-time notifications, profile linking, and comprehensive anime/manga search features.",
   "main": "src/index.js",
   "scripts": {
@@ -30,12 +30,12 @@
     "discobase-core": "^1.0.3",
     "discord.js": "^14.25.1",
     "express": "^5.2.1",
-    "figlet": "^1.10.0",
+    "figlet": "^1.11.0",
     "fs-extra": "^11.3.4",
     "gradient-string": "3.0.0",
     "ioredis": "^5.10.0",
     "micromatch": "^4.0.8",
-    "mongoose": "^9.2.4",
+    "mongoose": "^9.3.0",
     "multer": "^2.1.1",
     "node-cron": "^4.2.1",
     "pg": "^8.20.0",
