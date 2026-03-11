@@ -10,13 +10,13 @@ const reply = (i, title, desc, color) => i.editReply({ embeds: [embed({ title, d
 
 const UPSERT_SCHEDULE = 'INSERT INTO schedules (anime_id, anime_title, next_airing_at) VALUES ($1, $2, $3) ON CONFLICT (anime_id) DO UPDATE SET next_airing_at = EXCLUDED.next_airing_at, anime_title = EXCLUDED.anime_title';
 
-async function insertAnime(userId, username, anime, titleFallback) {
+async function insertAnime(userId, anime, titleFallback) {
   const title = anime.title?.english || anime.title?.romaji || titleFallback;
   const { rowCount } = await db.query('SELECT 1 FROM watchlists WHERE user_id = $1 AND anime_title = $2', [userId, title]);
   if (rowCount || !anime) return false;
 
   const airDate = anime.nextAiringEpisode?.airingAt * 1000 || null;
-  await db.query('INSERT INTO watchlists (user_id, discord_username, anime_title) VALUES ($1, $2, $3)', [userId, username, title]);
+  await db.query('INSERT INTO watchlists (user_id, anime_title) VALUES ($1, $2)', [userId, title]);
 
   if (airDate) {
     await db.query(UPSERT_SCHEDULE, [anime.id, title, airDate]);
@@ -39,7 +39,7 @@ module.exports = {
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
-    const { id: userId, username } = interaction.user;
+    const userId = interaction.user.id;
 
     try {
       if (sub === 'add') {
@@ -54,7 +54,7 @@ module.exports = {
         const { rowCount } = await db.query('SELECT 1 FROM watchlists WHERE user_id = $1 AND anime_title = $2', [userId, title]);
         if (rowCount) return reply(interaction, 'Watchlist', 'Already in your list.', 'Yellow');
 
-        const inserted = await insertAnime(userId, username, anime);
+        const inserted = await insertAnime(userId, anime);
         if (!inserted) {
           return reply(interaction, 'Error', 'Failed to add anime to your watchlist. Please try again later.', 'Red');
         }
@@ -128,7 +128,7 @@ module.exports = {
           for (const tag of ids) {
             const malId = parseInt(tag.match(/(\d+)/)[1]);
             const anime = await getAnimeByMalId(malId);
-            (await insertAnime(userId, username, anime, `MAL#${malId}`)) ? imported++ : skipped++;
+            (await insertAnime(userId, anime, `MAL#${malId}`)) ? imported++ : skipped++;
           }
         } else {
           let entries;
@@ -137,7 +137,7 @@ module.exports = {
 
           for (const entry of entries) {
             const anime = await getAnimeByAniListId(entry.anilistId);
-            (await insertAnime(userId, username, anime || { id: entry.anilistId }, entry.title)) ? imported++ : skipped++;
+            (await insertAnime(userId, anime || { id: entry.anilistId }, entry.title)) ? imported++ : skipped++;
           }
         }
 

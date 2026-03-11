@@ -7,7 +7,6 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS watchlists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL,
-    discord_username TEXT,
     anime_title TEXT NOT NULL,
     UNIQUE(user_id, anime_title)
   );

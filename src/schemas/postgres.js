@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 const config = require('../../config.json');
 
-const dbConfig = config.database.postgressql;
+const dbConfig = config.database.postgresql;
 
 if (!dbConfig?.enabled) {
   console.log('\x1b[36mℹ INFO\x1b[0m  │ PostgreSQL is disabled, using local database.');
