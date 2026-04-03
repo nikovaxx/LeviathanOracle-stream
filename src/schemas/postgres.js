@@ -68,7 +68,7 @@ pool.query(`
 
   module.exports = {
     type: 'postgres',
-    query: (text, params) => pool.query(text, params),
+    query: (text, params = []) => pool.query({ text: text, values: params}),
     getClient: () => pool.connect(),
     pool,
   };
