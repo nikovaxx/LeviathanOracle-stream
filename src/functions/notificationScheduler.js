@@ -1,172 +1,342 @@
+/**
+* Responsibilities:
+*  1. On startup: catch any episodes that aired while bot was offline (catchMissed).
+*  2. Schedule in-memory setTimeout timers for all future episodes in the DB.
+*  3. Every 8 hours: refresh next_airing_at from AniList for all tracked anime.
+*  4. Every day at 05:00 UTC: post the daily schedule to configured guild channels.
+**/
+
 const cron = require('node-cron');
-const db = require('../schemas/db');
+const db   = require('../schemas/db');
 const { embed } = require('./ui');
 const { getAnimeByAniListId, getDailySchedule } = require('../utils/API-services');
+const tracer = require('../utils/tracer');
 
 let bot = null;
-const jobs = new Map();
+const jobs    = new Map();
 const inFlight = new Set();
-let cronRunning = false;
-const MAX_TIMEOUT = 2147483647;
 
-async function poll(ts) {
-  if (ts) {
-    const { rowCount } = await db.query("SELECT 1 FROM bot_state WHERE key = $1", ['last_poll']);
-    return rowCount
-      ? db.query("UPDATE bot_state SET value = $1 WHERE key = $2", [String(ts), 'last_poll'])
-      : db.query("INSERT INTO bot_state (key, value) VALUES ($1, $2)", ['last_poll', String(ts)]);
-  }
-  const { rows } = await db.query("SELECT value FROM bot_state WHERE key = $1", ['last_poll']);
-  return rows[0]?.value || 0;
-}
+let cronRunning = false;
+
+// ── Initialize ────────────────────────────────────────────────────────────────
 
 async function initialize(client) {
   bot = client;
+  const t = tracer.start('SCHEDULER: Initialize');
+
   await catchMissed();
 
-  const { rows } = await db.query('SELECT * FROM schedules WHERE next_airing_at > $1', [Date.now()]);
-  rows.forEach(r => schedule(r));
+  // Load all future schedules into memory timers
+  try {
+    const { rows } = await db.query(
+      'SELECT * FROM schedules WHERE next_airing_at > $1',
+      [Date.now()]
+    );
+    rows.forEach(schedule);
+    t.info('SCHEDULER: Initialize', `Loaded ${rows.length} future schedule(s) into memory`);
+  } catch (e) {
+    t.error('SCHEDULER: Initialize', 'Failed to load schedules from DB', e);
+  }
 
+  // Every 8 hours: refresh from AniList + catch any misses
   cron.schedule('0 */8 * * *', async () => {
-    if (cronRunning) return;
+    if (cronRunning) {
+      tracer.warn('SCHEDULER: Cron', 'Previous run still in progress — skipping');
+      return;
+    }
     cronRunning = true;
     try {
       await catchMissed();
       await updateSchedules();
-      await poll(Date.now());
     } finally {
       cronRunning = false;
     }
   });
-  await poll(Date.now());
 
-  cron.schedule('5 0 * * *', () => sendDailySchedules(), { timezone: 'UTC' });
+  // Every day at 05:00 UTC: post daily schedule
+  cron.schedule('0 5 * * *', postDailySchedule);
+  t.end('SCHEDULER: Cron', 'Daily Scheduler ready');
 }
 
-async function catchMissed() {
-  const last = await poll(), now = Date.now();
-  const { rows } = await db.query('SELECT * FROM schedules WHERE next_airing_at > $1 AND next_airing_at <= $2', [last, now]);
-
-  for (const row of rows) {
-    await send(row);
-    await new Promise(res => setTimeout(res, 1000));
-  }
-}
-
-function schedule(entry) {
-  if (!entry.next_airing_at || entry.next_airing_at <= Date.now()) return;
-  if (jobs.has(entry.anime_id)) clearTimeout(jobs.get(entry.anime_id));
-  const delay = entry.next_airing_at - Date.now();
-  if (delay > MAX_TIMEOUT) {
-    jobs.set(entry.anime_id, setTimeout(() => schedule(entry), MAX_TIMEOUT));
-  } else {
-    jobs.set(entry.anime_id, setTimeout(() => send(entry), delay));
-  }
-}
+// ── Core: send a notification ─────────────────────────────────────────────────
 
 async function send(entry) {
-  if (inFlight.has(entry.anime_id)) return;
+  if (inFlight.has(entry.anime_id)) {
+    tracer.warn('SCHEDULER: Send', 'Already in-flight, skipping', { anime_id: entry.anime_id });
+    return;
+  }
+
+  // Secondary guard: if sent_at >= next_airing_at this episode was already sent
+  try {
+    const { rows } = await db.query(
+      'SELECT sent_at, next_airing_at FROM schedules WHERE anime_id = $1',
+      [entry.anime_id]
+    );
+    const row = rows[0];
+    if (row && row.sent_at && parseInt(row.sent_at) >= parseInt(row.next_airing_at)) {
+      tracer.warn('SCHEDULER: Send', 'Already sent for this airing slot — skipping', {
+        anime_id: entry.anime_id,
+        sent_at: row.sent_at,
+        next_airing_at: row.next_airing_at,
+      });
+      return;
+    }
+  } catch (e) {
+    tracer.error('SCHEDULER: Send', 'DB guard check failed', e);
+  }
+
   inFlight.add(entry.anime_id);
+  jobs.delete(entry.anime_id);
+
+  const t = tracer.start('SCHEDULER: Send', { anime_id: entry.anime_id, title: entry.anime_title });
+
+  try {
+    await db.query(
+      'UPDATE schedules SET sent_at = $1 WHERE anime_id = $2',
+      [Date.now(), entry.anime_id]
+    );
+  } catch (e) {
+    t.error('SCHEDULER: Notification History', 'Failed to write sent_at — proceeding anyway', e);
+  }
+
   try {
     const a = await getAnimeByAniListId(entry.anime_id);
-    if (!a) return;
+    if (!a) {
+      t.warn('SCHEDULER: API Fetch', 'Anime not found on AniList', { anime_id: entry.anime_id });
+      return;
+    }
 
-    const epNum = a.nextAiringEpisode?.episode - 1 || 'Latest';
+    const episodeNum = (a.nextAiringEpisode?.episode ?? 1) - 1 || 'latest';
     const airedDate = new Date(entry.next_airing_at).toUTCString();
 
     const e = embed({
-      title: `New Episode of ${a.title.english || a.title.romaji} Released!`,
-      desc: `Episode ${epNum} is now available!\nAired at: ${airedDate}. Remember that the episode might take some time depending on which platform you are watching on.`,
-      thumbnail: a.coverImage?.large, color: '#0099ff',
+      title: `New Episode of ${a.title?.english || a.title?.romaji} Released!`,
+      desc: `**Episode ${episodeNum} is now available!**\nAired at: ${airedDate}. Remember that the episode might take some time depending on which platform you are watching on.`,
+      thumbnail: a.coverImage?.large,
+      color: '#0099ff',
       footer: 'Episode just released!'
     });
 
-    const { rows: users } = await db.query('SELECT user_id FROM watchlists WHERE anime_title = $1', [entry.anime_title]);
-    for (const user of users) {
+    // ── Notify individual watchlist users ────────────────────────────────────
+    const { rows: users } = await db.query(
+      'SELECT DISTINCT user_id FROM watchlists WHERE anime_id = $1',
+      [entry.anime_id]
+    );
+
+    for (const { user_id } of users) {
       try {
-        const { rows: p } = await db.query('SELECT notification_type FROM user_preferences WHERE user_id = $1', [user.user_id]);
-        const notifType = p[0]?.notification_type || 'dm';
-        if (notifType === 'dm') {
-          const u = await bot.users.fetch(user.user_id).catch(() => null);
-          if (u) await u.send({ embeds: [e] }).catch(() => null);
-        } else {
-          const g = bot.guilds.cache.find(g => g.members.cache.has(user.user_id));
-          const { rows: s } = await db.query('SELECT notification_channel_id FROM guild_settings WHERE guild_id = $1', [g?.id]);
-          if (s[0]?.notification_channel_id) (await bot.channels.fetch(s[0].notification_channel_id))?.send({ content: `<@${user.user_id}>`, embeds: [e] }).catch(() => null);
+        const user = await bot.users.fetch(user_id).catch((err) => {
+          t.warn('SCHEDULER: DM Notifier', 'Failed to fetch user ${user_id}', err);
+          return null;
+        });
+        if (user) {
+          await user.send({ embeds: [e] });
         }
-      } catch {}
+      } catch (err) {
+        t.error('SCHEDULER: DM Notifier', `Failed to notify user ${user_id}`, err);
+      }
     }
 
-    const { rows: roles } = await db.query('SELECT role_id, guild_id FROM role_notifications WHERE anime_title = $1', [entry.anime_title]);
-    for (const role of roles) {
+    // ── Notify role subscriptions ────────────────────────────────────────────
+    const { rows: roles } = await db.query(
+      'SELECT role_id, guild_id FROM role_notifications WHERE anime_id = $1',
+      [entry.anime_id]
+    );
+
+    for (const { role_id, guild_id } of roles) {
       try {
-        const { rows: s } = await db.query('SELECT notification_channel_id FROM guild_settings WHERE guild_id = $1', [role.guild_id]);
-        if (s[0]?.notification_channel_id) (await bot.channels.fetch(s[0].notification_channel_id))?.send({ content: `<@&${role.role_id}>`, embeds: [e] }).catch(() => null);
-      } catch {}
+        const { rows: gs } = await db.query(
+          'SELECT daily_schedule_channel_id FROM guild_settings WHERE guild_id = $1',
+          [guild_id]
+        );
+        const chanId = gs[0]?.daily_schedule_channel_id;
+        if (chanId) {
+          const chan = await bot.channels.fetch(chanId).catch((err) => {
+            t.warn('SCHEDULER: Role Notifier', 'Failed to fetch channel ${chanId}', err);
+            return null;
+          });
+          if (chan) {
+            await chan.send({ content: `<@&${role_id}>`, embeds: [e] });
+          }
+        }
+      } catch (err) {
+        t.error('SCHEDULER: Role Notifier', `Failed to notify role ${role_id}`, err);
+      }
     }
 
-    jobs.delete(entry.anime_id);
-    if (a.nextAiringEpisode?.airingAt) {
-      const next = a.nextAiringEpisode.airingAt * 1000;
-      await db.query('UPDATE schedules SET next_airing_at = $1 WHERE anime_id = $2', [next, entry.anime_id]);
-      schedule({ ...entry, next_airing_at: next });
+    // ── Schedule the NEXT episode ────────────────────────────────────────────
+    const nextAiringAt = a.nextAiringEpisode?.airingAt
+      ? a.nextAiringEpisode.airingAt * 1000
+      : null;
+
+    if (nextAiringAt && nextAiringAt > Date.now()) {
+      await db.query(
+        'UPDATE schedules SET next_airing_at = $1, sent_at = NULL WHERE anime_id = $2',
+        [nextAiringAt, entry.anime_id]
+      );
+      schedule({ ...entry, next_airing_at: nextAiringAt });
+      t.info('SCHEDULER: Role Notifier', 'SCHEDULER: Next episode scheduled', { nextAiringAt: new Date(nextAiringAt).toISOString() });
+    } else {
+      t.info('SCHEDULER: Role Notifier', 'No next episode from AniList; leaving schedule as-is');
     }
-  } catch (err) { console.error(`Error [schedule ${entry.anime_id}]:`, err.message); }
-  finally {
+
+    t.end('SCHEDULER: Role Notifier', 'send complete');
+  } catch (e) {
+    t.error('SCHEDULER: Role Notifier', 'Unexpected error during send', e);
+  } finally {
     inFlight.delete(entry.anime_id);
   }
 }
 
-async function updateSchedules() {
-  const { rows } = await db.query('SELECT * FROM schedules WHERE next_airing_at IS NOT NULL');
-  for (const row of rows) {
-    const a = await getAnimeByAniListId(row.anime_id);
-    const next = a?.nextAiringEpisode?.airingAt * 1000;
-    if (next && next !== row.next_airing_at) {
-      await db.query('UPDATE schedules SET next_airing_at = $1 WHERE anime_id = $2', [next, row.anime_id]);
-      schedule({ ...row, next_airing_at: next });
+// ── Schedule an in-memory timer ───────────────────────────────────────────────
+
+function schedule(entry) {
+  if (!entry.next_airing_at) return;
+  const delay = entry.next_airing_at - Date.now();
+  if (delay <= 0) return; // already past — catchMissed handles this
+
+  cancel(entry.anime_id);
+  const handle = setTimeout(() => send(entry), delay);
+  jobs.set(entry.anime_id, handle);
+  tracer.debug('SCHEDULER: In-Memory Timer', `Timer set for ${entry.anime_title}`, {
+    anime_id: entry.anime_id,
+    in_ms: delay,
+    at: new Date(entry.next_airing_at).toISOString(),
+  });
+}
+
+function cancel(id) {
+  clearTimeout(jobs.get(id));
+  jobs.delete(id);
+}
+
+// ── Catch episodes missed while offline ───────────────────────────────────────
+
+async function catchMissed() {
+  const t = tracer.start('SCHEDULER: Catch Missed Episodes');
+  const now = Date.now();
+
+  try {
+    // Episodes where the airing time has passed BUT no sent_at record for this slot present
+    const { rows } = await db.query(
+      `SELECT * FROM schedules
+       WHERE next_airing_at <= $1
+         AND next_airing_at IS NOT NULL
+         AND (sent_at IS NULL OR sent_at < next_airing_at)`,
+      [now]
+    );
+
+    t.info(`Found ${rows.length} missed episode(s)`);
+
+    for (const row of rows) {
+      await send(row);
+      await new Promise(r => setTimeout(r, 1500)); // small delay between sends
     }
-    await new Promise(r => setTimeout(r, 1000));
+
+    t.end('SCHEDULER: Catch Missed Episodes', 'catchMissed done');
+  } catch (e) {
+    t.error('SCHEDULER: Catch Missed Episodes', 'catchMissed failed', e);
   }
 }
 
-async function sendDailySchedules() {
-  if (!bot) return;
+// ── Refresh next_airing_at from AniList ──────────────────────────────────────
+
+async function updateSchedules() {
+  const t = tracer.start('SCHEDULER: Refresh Schedules');
   try {
-    const { rows: guilds } = await db.query("SELECT guild_id, daily_schedule_channel_id FROM guild_settings WHERE daily_schedule_enabled = $1 AND daily_schedule_channel_id IS NOT NULL", ['true']);
-    if (!guilds.length) return;
+    const { rows } = await db.query('SELECT * FROM schedules WHERE next_airing_at IS NOT NULL');
+    t.info(`Refreshing ${rows.length} schedule(s) from AniList`);
 
-    const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const data = await getDailySchedule(dayName);
-    if (!data?.length) return;
+    for (const row of rows) {
+      try {
+        const anime = await getAnimeByAniListId(row.anime_id);
+        const nextAiringAt = anime?.nextAiringEpisode?.airingAt
+          ? anime.nextAiringEpisode.airingAt * 1000
+          : null;
 
-    const fields = data.map(a => ({
-      name: a.english || a.title,
-      value: `**Ep ${a.episodeNumber}** — <t:${Math.floor(new Date(a.episodeDate).getTime() / 1000)}:f>`
-    }));
+        if (nextAiringAt && nextAiringAt !== parseInt(row.next_airing_at)) {
+          await db.query(
+            'UPDATE schedules SET next_airing_at = $1, sent_at = NULL WHERE anime_id = $2',
+            [nextAiringAt, row.anime_id]
+          );
+          schedule({ ...row, next_airing_at: nextAiringAt });
+          tracer.debug('SCHEDULER: Refresh Schedules', `Updated ${row.anime_title}`, {
+            old: row.next_airing_at,
+            new: nextAiringAt,
+          });
+        }
+      } catch (err) {
+        tracer.error('SCHEDULER: Refresh Schedules', `Failed to update ${row.anime_title}`, err);
+      }
+      await new Promise(r => setTimeout(r, 1000));
+    }
 
-    const e = embed({
-      title: `📅 ${dayName}'s Anime Schedule`,
-      fields,
-      color: '#0099ff',
-      footer: `${data.length} show${data.length !== 1 ? 's' : ''} airing today`
+    t.end('SCHEDULER: Refresh Schedules', 'Schedules update done');
+  } catch (e) {
+    t.error('SCHEDULER: Refresh Schedules', 'Failed to update schedules', e);
+  }
+}
+
+// ── Daily schedule post ───────────────────────────────────────────────────────
+// Posts today's airing anime to all guilds that have daily-schedule enabled.
+
+async function postDailySchedule() {
+  const t = tracer.start('SCHEDULER: Post Daily Schedule');
+  try {
+    const { rows: guilds } = await db.query(
+      `SELECT guild_id, daily_schedule_channel_id
+       FROM guild_settings
+       WHERE daily_schedule_enabled IN ('true', '1', 1)`
+    );
+
+    if (!guilds.length) {
+      t.info('No guilds have daily schedule enabled');
+      return;
+    }
+
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+    const todayData = await getDailySchedule(today, 'all').catch((err) => {
+      t.warn('Failed to fetch daily schedule data', err);
+      return [];
     });
 
-    for (const g of guilds) {
-      try {
-        const ch = await bot.channels.fetch(g.daily_schedule_channel_id).catch(() => null);
-        if (ch) await ch.send({ embeds: [e] });
-      } catch {}
+    if (!todayData.length) {
+      t.info('No episodes scheduled for today', { today });
+      return;
     }
-  } catch (err) {
-    console.error('Daily schedule error:', err.message);
-  }
-}
 
-function cancel(animeId) {
-  if (jobs.has(animeId)) {
-    clearTimeout(jobs.get(animeId));
-    jobs.delete(animeId);
+    todayData.sort((a, b) => new Date(a.episodeDate) - new Date(b.episodeDate));
+
+    const e = embed({
+      title: `📅 ${today}'s Anime Schedule`,
+      desc:  `**${todayData.length}** anime airing today`,
+      fields: todayData.slice(0, 25).map(a => ({
+        name:  a.english || a.route || a.title || 'Unknown',
+        value: `**Ep ${a.episodeNumber ?? '?'}** — <t:${Math.floor(new Date(a.episodeDate).getTime() / 1000)}:f>`,
+      })),
+      color:  '#0099ff',
+      footer: todayData.length > 25 ? `Showing 25 of ${todayData.length}` : `${todayData.length} anime airing today`,
+    });
+
+    for (const { daily_schedule_channel_id: cid } of guilds) {
+      if (!cid) continue;
+      try {
+        const chan = await bot.channels.fetch(cid).catch((err) => {
+          tracer.warn('SCHEDULER: Post Daily Schedule', `Failed to fetch channel ${cid}`, err);
+          return null;
+        });
+        if (!chan) continue;
+        await chan.send({ embeds: [e] });
+        tracer.debug('SCHEDULER: Post Daily Schedule', `Posted to channel ${cid}`);
+      } catch (err) {
+        tracer.error('SCHEDULER: Post Daily Schedule', `Failed to post to ${cid}`, err);
+      }
+    }
+
+    t.end(`Posted to ${guilds.length} guild(s)`);
+  } catch (e) {
+    t.error('SCHEDULER: Post Daily Schedule', 'Failed to post daily schedule', e);
   }
 }
 

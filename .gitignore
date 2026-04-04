@@ -10,3 +10,5 @@ config.json
 localdb.db
 FetchTest.js
 errors/
+DB-Migration/
+TODO.md

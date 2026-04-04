@@ -17,7 +17,7 @@
   },
   "database": {
     "mongodbUrl": "",
-    "postgressql": {
+    "postgresql": {
       "enabled": false,
       "config": {
         "host": "host",
