@@ -1,7 +1,8 @@
 const { SlashCommandBuilder, ButtonStyle, MessageFlags, InteractionContextType } = require('discord.js');
-const { getDailySchedule, getAnimeScheduleByAniListId } = require('../../utils/API-services');
+const { getDailySchedule, getAnimeByAniListId } = require('../../utils/API-services');
 const { embed, ui } = require('../../functions/ui');
 const db = require('../../schemas/db');
+const tracer = require('../../utils/tracer');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -20,6 +21,7 @@ module.exports = {
 
   async execute(interaction) {
     const filter = interaction.options.getString('filter');
+    const t = tracer.start(`upcoming:${filter}`, { userId: interaction.user.id });
 
     try {
       const msg = await interaction.deferReply({ fetchReply: true });
@@ -42,7 +44,7 @@ module.exports = {
         const type = await promptForType(interaction, msg, day);
         if (!type) return;
 
-        data = await getDailySchedule(day, type) || [];
+        data = await getDailySchedule(day, type.toLowerCase()) || [];
         header = `Schedule: **${day}** (${type})`;
       } 
       
@@ -72,15 +74,25 @@ async function fetchWatchlistData(userId, t) {
   const { rows } = await db.query('SELECT anime_title, anime_id FROM watchlists WHERE user_id = $1', [userId]);
   if (!rows.length) return [];
 
-  // Fetch all schedules in parallel for better performance
+  const now = Date.now();
   const results = await Promise.all(rows.map(async (entry) => {
     if (!entry.anime_id) return null;
-    const schedule = await getAnimeScheduleByAniListId(entry.anime_id);
-    
-    if (schedule?.episodeDate && new Date(schedule.episodeDate) > new Date()) {
-      return { ...schedule, _fallbackTitle: entry.anime_title };
-    }
-    return null;
+
+    const anime = await getAnimeByAniListId(entry.anime_id).catch(() => null);
+    const airingAt = anime?.nextAiringEpisode?.airingAt;
+    if (!airingAt) return null;
+
+    const episodeDateMs = airingAt * 1000;
+    if (episodeDateMs <= now) return null;
+
+    return {
+      anime_id: entry.anime_id,
+      title: anime?.title?.romaji || entry.anime_title,
+      english: anime?.title?.english || null,
+      episodeDate: new Date(episodeDateMs).toISOString(),
+      episodeNumber: anime?.nextAiringEpisode?.episode ?? null,
+      _fallbackTitle: entry.anime_title,
+    };
   }));
 
   return results.filter(Boolean).sort((a, b) => new Date(a.episodeDate) - new Date(b.episodeDate));
@@ -96,16 +108,19 @@ async function promptForDay(interaction, msg) {
   await interaction.editReply({ content: 'Select a day:', components: rows });
   const click = await msg.awaitMessageComponent({ time: 30000 }).catch(() => null);
   if (!click) { await interaction.editReply({ content: 'Timed out.', components: [] }); return null; }
-  return click; // Note: This returns the interaction object to update it in the next step
+  const selectedDay = click.customId;
+  await click.update({ content: `Day: **${selectedDay}** selected.`, components: [] });
+  return selectedDay;
 }
 
-async function promptForType(interaction, msg, dayInteraction) {
+async function promptForType(interaction, msg, selectedDay) {
   const types = ['Sub', 'Dub', 'Raw'];
   const row = ui.row(types.map(ty => ({ id: ty, label: ty, style: ButtonStyle.Secondary })));
 
-  await dayInteraction.update({ content: `Day: **${dayInteraction.customId}**. Select type:`, components: [row] });
+  await interaction.editReply({ content: `Day: **${selectedDay}**. Select type:`, components: [row] });
   const click = await msg.awaitMessageComponent({ time: 30000 }).catch(() => null);
   if (!click) { await interaction.editReply({ content: 'Timed out.', components: [] }); return null; }
+  await click.update({ content: `Day: **${selectedDay}**. Type: **${click.customId}**.`, components: [] });
   return click.customId;
 }
 
