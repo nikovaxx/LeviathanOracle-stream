@@ -6,7 +6,7 @@ const HELP_PAGES = {
         color: 0x0099ff,
         desc:
             '# LeviathanOracle\n\n' +
-            'A powerful Discord bot built to manage your anime experience. Link profiles, track watchlists, and search for your favorite series with ease.\n\n' +
+            'A Discord bot built to manage your anime experience. Link profiles, track watchlists, and search for your favorite series with ease.\n\n' +
             '### Core Features\n' +
             '• **Anime Watchlist** - Track what you are watching.\n' +
             '• **Profile Linking** - Sync with MyAnimeList & AniList.\n' +
@@ -24,36 +24,31 @@ const HELP_PAGES = {
             '• `/watchlist add <title>` - Add to your list\n' +
             '• `/watchlist remove <title>` - Remove from list\n' +
             '• `/watchlist view` - View your watchlist\n' +
-            '• `/watchlist export/import` - Manage your data\n\n' +
+            '• `/watchlist view <@User|UserId>` - View others\' public watchlists\n' +
+            '• `/watchlist export` - Export your watchlist\n' +
+            '• `/watchlist import` - Import your watchlist\n\n' +
             '### Profiles\n' +
-            '• `/linkprofile <mal|anilist> <user>` - Link account\n' +
+            '• `/linkprofile mal <username>` - Link MAL profile\n' +
+            '• `/linkprofile anilist <username>` - Link AniList profile\n' +
             '• `/linkedprofile` - View your linked accounts\n' +
-            '• `/search-profile-mal <user>` - View MAL profile\n' +
-            '• `/search-profile-anilist <user>` - View AniList profile\n\n' +
+            '• `/search-profile-mal <username>` - View MAL profile\n' +
+            '• `/search-profile-anilist <username>` - View AniList profile\n\n' +
             '### Anime & Manga\n' +
-            '• `/search-anime <title>` - Search anime details\n' +
-            '• `/search-manga <title>` - Search manga details\n' +
-            '• `/upcoming <filter>` - Browse episode schedule\n' +
+            '• `/search-anime <anime>` - Search anime details\n' +
+            '• `/search-manga <manga>` - Search manga details\n' +
+            '• `/upcoming watchlist` - Watchlist release schedule\n' +
+            '• `/upcoming week <day> <airing_type>` - Weekly anime schedule\n' +
             '• `/nyaa <query>` - Search Nyaa torrents\n\n' +
             '### System\n' +
             '• `/ping` - Check bot latency\n' +
-            '• `/preference` - Bot & notification settings\n' +
-            '• `/rolenotification` - Manage role-based alerts\n' +
+            '• `/set-levelrole <@role>` - Set required role for bot commands\n' +
+            '• `/preference notification <dm|server>` - Set notification delivery\n' +
+            '• `/preference watchlist <private|public>` - Set watchlist visibility\n' +
+            '• `/preference view` - View your current preferences\n' +
+            '• `/rolenotification add <role> <anime>` - Subscribe a role\n' +
+            '• `/rolenotification remove <role> <anime>` - Unsubscribe a role\n' +
+            '• `/rolenotification list [role]` - List role-based notifications\n' +
             '• `/report` - Submit a bug report'
-    }),
-
-    help_prefix: () => ui.v2({
-        color: 0xe74c3c,
-        desc:
-            '## Prefix Commands\n' +
-            '*Default Prefix:* `!`\n\n' +
-            '• `!upcoming <day> [type]` - View schedule (alias: `!schedule`)\n' +
-            '• `!nyaa <query>` - Search Nyaa (alias: `!torrent`)\n' +
-            '• `!linkprofile <mal|anilist> <user>` - Link account (alias: `!link`)\n' +
-            '• `!linkedprofile` - View linked accounts (alias: `!linked`, `!myprofiles`)\n' +
-            '• `!ping` - Check latency (alias: `!p`)\n' +
-            '• `!preference <type> [value]` - Settings (alias: `!pref`, `!settings`)\n' +
-            '• `!rolenotification <add|remove|list>` - Role alerts (alias: `!rolenoti`, `!rn`)'
     })
 };
 
@@ -67,7 +62,6 @@ module.exports = {
         const buttonRow = ui.row([
             { id: 'help_about', label: 'About', style: ButtonStyle.Primary },
             { id: 'help_commands', label: 'Slash Commands', style: ButtonStyle.Success },
-            { id: 'help_prefix', label: 'Prefix Commands', style: ButtonStyle.Danger }
         ]);
 
         await interaction.deferReply(ui.interactionPublic({ ephemeral: false }));
