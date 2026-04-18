@@ -1,9 +1,9 @@
-const { SlashCommandBuilder, MessageFlags, InteractionContextType } = require('discord.js');
+const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
 const db = require('../../schemas/db');
-const { searchAnimeAniList, getAnimeByAniListId } = require('../../utils/API-services');
+const { searchAnimeByAniList, getAnimeByAniListId } = require('../../utils/API-services');
 const { bestMatch } = require('../../utils/fuzzy');
 const scheduler = require('../../functions/notificationScheduler');
-const { embed } = require('../../functions/ui');
+const { ui } = require('../../functions/ui');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,11 +17,11 @@ module.exports = {
   async execute(interaction) {
     const sub = interaction.options.getSubcommand(), gid = interaction.guild.id;
     const role = interaction.options.getRole('role'), input = interaction.options.getString('anime');
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply(ui.interactionPublic());
 
     const actions = {
       add: async () => {
-        const res = await (/^\d+$/.test(input) ? getAnimeByAniListId(input) : searchAnimeAniList(input));
+        const res = await (/^\d+$/.test(input) ? getAnimeByAniListId(input) : searchAnimeByAniList(input));
         const a = Array.isArray(res) ? res[0] : res;
         if (!a) return 'Anime not found.';
 
@@ -66,7 +66,7 @@ module.exports = {
 
     try {
       const res = await actions[sub]();
-      interaction.editReply(typeof res === 'string' ? res : { embeds: [embed(res)] });
+      interaction.editReply(typeof res === 'string' ? res : ui.interactionPrivate(res));
     } catch (e) {
       console.error(e);
       interaction.editReply('Command error.');
@@ -76,7 +76,7 @@ module.exports = {
   async autocomplete(interaction) {
     const val = interaction.options.getFocused();
     if (!val) return interaction.respond([]);
-    const res = await searchAnimeAniList(val) || [];
+    const res = await searchAnimeByAniList(val) || [];
     const ranked = bestMatch(val, res, a => [a.title?.english, a.title?.romaji]).slice(0, 25);
     interaction.respond(ranked.map(a => ({ name: (a.title.english || a.title.romaji).slice(0, 100), value: String(a.id) })));
   }

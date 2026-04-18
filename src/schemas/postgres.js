@@ -60,6 +60,7 @@ pool.query(`
     notification_channel_id VARCHAR(255),
     daily_schedule_channel_id VARCHAR(255),
     daily_schedule_enabled VARCHAR(10) DEFAULT 'false',
+    daily_schedule_time VARCHAR(5) DEFAULT '05:00',
     level_role_id VARCHAR(255),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
@@ -73,11 +74,12 @@ pool.query(`
   CREATE INDEX IF NOT EXISTS idx_schedules_anime_title ON schedules(anime_title);
 
   ALTER TABLE schedules ADD COLUMN IF NOT EXISTS sent_at BIGINT DEFAULT NULL;
+  ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS daily_schedule_time VARCHAR(5) DEFAULT '05:00';
 `).catch(err => tracer.error('DATABASE: PostgreSQL', 'PostgreSQL init error', err));
 
   module.exports = {
     type: 'postgres',
-    query: (text, params) => pool.query(text, params),
+    query: (text, params = []) => pool.query({ text, values: params }),
     getClient: () => pool.connect(),
     pool,
   };

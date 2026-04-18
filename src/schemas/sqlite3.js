@@ -51,6 +51,7 @@ try {
     guild_id TEXT PRIMARY KEY,
     daily_schedule_channel_id TEXT,
     daily_schedule_enabled TEXT DEFAULT 'false',
+    daily_schedule_time TEXT DEFAULT '05:00',
     level_role_id TEXT,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
@@ -68,6 +69,12 @@ try {
   const hasSentAt = scheduleColumns.some(col => col.name === 'sent_at');
   if (!hasSentAt) {
     db.exec(`ALTER TABLE schedules ADD COLUMN sent_at INTEGER DEFAULT NULL;`);
+  }
+
+  const guildColumns = db.prepare(`PRAGMA table_info(guild_settings)`).all();
+  const hasDailyScheduleTime = guildColumns.some(col => col.name === 'daily_schedule_time');
+  if (!hasDailyScheduleTime) {
+    db.exec(`ALTER TABLE guild_settings ADD COLUMN daily_schedule_time TEXT DEFAULT '05:00';`);
   }
 
   tracer.info('DATABASE: SQLite3', 'SQLite schema initialized');

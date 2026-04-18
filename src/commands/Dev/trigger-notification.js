@@ -1,8 +1,9 @@
-const { SlashCommandBuilder, MessageFlags, InteractionContextType, time } = require('discord.js');
+const { SlashCommandBuilder, InteractionContextType, time } = require('discord.js');
 const db = require('../../schemas/db');
 const scheduler = require('../../functions/notificationScheduler');
 const { getAnimeByAniListId } = require('../../utils/API-services');
 const tracer = require('../../utils/tracer');
+const { ui } = require('../../functions/ui');
 
 /**
  * Updates the database and triggers the scheduler.
@@ -52,7 +53,7 @@ module.exports = {
         const delaySeconds = interaction.options.getInteger('delay_seconds') ?? 5;
         
         const t = tracer.start('dev:trigger-notification', { userId: interaction.user.id, animeId });
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.deferReply(ui.interactionPublic({ componentsV2: false }));
 
         try {
             const anime = await getAnimeByAniListId(animeId);

@@ -1,4 +1,5 @@
-const { SlashCommandBuilder, MessageFlags, InteractionContextType } = require('discord.js');
+const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
+const { ui } = require('../../functions/ui');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -18,7 +19,7 @@ module.exports = {
             console.error('Error in ping command:', error);
             const errorMessage = { content: 'An error occurred while executing this command. Please try again later.' };
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ ...errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
+                await interaction.reply(ui.interactionPublic({ ...errorMessage, componentsV2: false })).catch(() => {});
             } else if (interaction.deferred) {
                 await interaction.editReply(errorMessage).catch(() => {});
             }

@@ -2,8 +2,160 @@ const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle,
   ContainerBuilder, SectionBuilder, TextDisplayBuilder,
   SeparatorBuilder, SeparatorSpacingSize,
-  MediaGalleryBuilder, MediaGalleryItemBuilder, ThumbnailBuilder
+  MediaGalleryBuilder, MediaGalleryItemBuilder, ThumbnailBuilder,
+  MessageFlags
 } = require('discord.js');
+
+const FLAG_DEFAULTS = {
+  public: { ephemeral: false },
+  private: { ephemeral: true }
+};
+
+const COLOR_NAMES = {
+  red: 0xff0000,
+  green: 0x00ff00,
+  blue: 0x0000ff,
+  yellow: 0xffff00,
+  orange: 0xffa500,
+  purple: 0x800080,
+  pink: 0xffc0cb,
+  cyan: 0x00ffff,
+  teal: 0x008080,
+  white: 0xffffff,
+  black: 0x000000,
+  gray: 0x808080,
+  grey: 0x808080,
+};
+
+const resolveAccentColor = (color) => {
+  if (Array.isArray(color)) return color;
+  if (typeof color === 'number' && Number.isFinite(color)) return color;
+  if (typeof color !== 'string') return null;
+
+  const input = color.trim();
+  if (!input) return null;
+
+  const named = COLOR_NAMES[input.toLowerCase()];
+  if (named !== undefined) return named;
+
+  if (/^0x[\da-f]{1,6}$/i.test(input)) {
+    return Number.parseInt(input, 16);
+  }
+
+  if (/^#[\da-f]{3}$/i.test(input)) {
+    const hex = input.slice(1);
+    return Number.parseInt(`${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`, 16);
+  }
+
+  if (/^#[\da-f]{6}$/i.test(input)) {
+    return Number.parseInt(input.slice(1), 16);
+  }
+
+  if (/^[\da-f]{6}$/i.test(input)) {
+    return Number.parseInt(input, 16);
+  }
+
+  if (/^\d+$/.test(input)) {
+    return Number.parseInt(input, 10);
+  }
+
+  return null;
+};
+
+const buildFlags = ({ flags = 0, ephemeral, componentsV2 = true } = {}) => {
+  let out = flags;
+
+  out = ephemeral ? (out | MessageFlags.Ephemeral) : (out & ~MessageFlags.Ephemeral);
+  out = componentsV2 ? (out | MessageFlags.IsComponentsV2) : (out & ~MessageFlags.IsComponentsV2);
+
+  return out;
+};
+
+const resolveFlags = (extra = {}, defaults) => {
+  const {
+    flags = 0,
+    ephemeral,
+    componentsV2,
+    ...rest
+  } = extra;
+
+  return {
+    rest,
+    flags: buildFlags({
+      flags,
+      ephemeral: ephemeral ?? defaults.ephemeral,
+      componentsV2,
+    }),
+  };
+};
+
+const interactionPublic = (extra = {}) => {
+  const { rest, flags } = resolveFlags(extra, FLAG_DEFAULTS.public);
+
+  return {
+    ...rest,
+    flags,
+  };
+};
+
+const v2 = (options = {}) => {
+  const c = new ContainerBuilder();
+  const accentColor = resolveAccentColor(options.color);
+  if (accentColor != null) c.setAccentColor(accentColor);
+  if (options.spoiler) c.setSpoiler(true);
+  if (options.title) c.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${options.title}`));
+  if (options.title && (options.desc || options.description)) {
+    c.addSeparatorComponents(new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small));
+  }
+
+  if (options.desc || options.description) {
+    c.addTextDisplayComponents(new TextDisplayBuilder().setContent(options.desc || options.description));
+  }
+
+  const mediaUrl = options.image || options.thumbnail;
+
+  if (mediaUrl) {
+    c.addMediaGalleryComponents(
+      new MediaGalleryBuilder().addItems(
+        new MediaGalleryItemBuilder().setURL(mediaUrl)
+      )
+    );
+  }
+
+  if (options.fields?.length) {
+    c.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+    options.fields.forEach((f) => {
+      c.addTextDisplayComponents(new TextDisplayBuilder().setContent(`**${f.name}**\n${f.value}`));
+    });
+  }
+
+  if (options.footer) {
+    c.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+    const footerText = typeof options.footer === 'string' ? options.footer : options.footer.text;
+    c.addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# ${footerText}`));
+  }
+  
+  return c;
+};
+
+const interactionPrivate = (options = {}, extra = {}) => {
+  const {
+    components,
+    ...flagExtra
+  } = extra;
+
+  const { rest, flags } = resolveFlags(flagExtra, FLAG_DEFAULTS.private);
+
+  const out = { ...rest };
+  const extraComponents = Array.isArray(components)
+    ? components
+    : components
+      ? [components]
+      : [];
+  out.components = [v2(options), ...extraComponents];
+  out.flags = flags;
+  return out;
+};
 
 module.exports = {
   row: (buttons) => new ActionRowBuilder().addComponents(
@@ -21,7 +173,8 @@ module.exports = {
 
   container: (options = {}) => {
     const c = new ContainerBuilder();
-    if (options.color) c.setAccentColor(options.color);
+    const accentColor = resolveAccentColor(options.color);
+    if (accentColor != null) c.setAccentColor(accentColor);
     if (options.spoiler) c.setSpoiler(true);
     return c;
   },
@@ -62,5 +215,9 @@ module.exports = {
       if (i.spoiler) item.setSpoiler(true);
       return item;
     })
-  )
+  ),
+
+  v2,
+  interactionPrivate,
+  interactionPublic
 };

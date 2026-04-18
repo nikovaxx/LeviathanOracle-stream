@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, MessageFlags, InteractionContextType } = require('discord.js');
+const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
 const { fetchRSSFeedWithRetries, filterEnglishAnimeItems } = require('../../utils/nyaaRSS');
-const { embed } = require('../../functions/ui');
+const { ui } = require('../../functions/ui');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -10,7 +10,7 @@ module.exports = {
     .addStringOption(o => o.setName('query').setDescription('Search term').setRequired(true)),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.deferReply(ui.interactionPublic({ ephemeral: false }));
     const query = interaction.options.getString('query');
 
     try {
@@ -20,11 +20,13 @@ module.exports = {
       if (!items.length) return interaction.editReply(`No results found for "${query}".`);
 
       const fields = items.slice(0, 10).map((item, i) => ({ name: `${i + 1}. ${item.title}`, value: item.link }));
-      await interaction.editReply({ embeds: [embed({ title: `Results: ${query}`, fields, color: 0x0099ff })] });
+      await interaction.editReply(ui.interactionPrivate({ title: `Results: ${query}`, fields, color: 0x0099ff }));
     } catch (e) {
       console.error(e);
-      const err = { content: 'Search failed.', flags: MessageFlags.Ephemeral };
-      interaction.replied || interaction.deferred ? await interaction.editReply(err) : await interaction.reply(err);
+      const err = 'Search failed.';
+      interaction.replied || interaction.deferred
+        ? await interaction.editReply(err)
+        : await interaction.reply(ui.interactionPublic({ content: err, componentsV2: false }));
     }
   }
 };

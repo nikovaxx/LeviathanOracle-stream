@@ -1,8 +1,8 @@
-const { SlashCommandBuilder, ButtonStyle, ComponentType, MessageFlags } = require('discord.js');
-const { embed, ui } = require('../../functions/ui');
+const { SlashCommandBuilder, ButtonStyle, ComponentType } = require('discord.js');
+const { ui } = require('../../functions/ui');
 
 const HELP_PAGES = {
-    help_about: () => embed.v2({
+    help_about: () => ui.v2({
         color: 0x0099ff,
         desc:
             '# LeviathanOracle\n\n' +
@@ -16,7 +16,7 @@ const HELP_PAGES = {
             '• **Developers:** [Pilot_kun](https://github.com/PilotKun) & [Niko](https://github.com/nikovaxx)'
     }),
 
-    help_commands: () => embed.v2({
+    help_commands: () => ui.v2({
         color: 0x2ecc71,
         desc:
             '## Slash Commands\n\n' +
@@ -42,7 +42,7 @@ const HELP_PAGES = {
             '• `/report` - Submit a bug report'
     }),
 
-    help_prefix: () => embed.v2({
+    help_prefix: () => ui.v2({
         color: 0xe74c3c,
         desc:
             '## Prefix Commands\n' +
@@ -70,12 +70,14 @@ module.exports = {
             { id: 'help_prefix', label: 'Prefix Commands', style: ButtonStyle.Danger }
         ]);
 
-        await interaction.deferReply();
+        await interaction.deferReply(ui.interactionPublic({ ephemeral: false }));
 
-        const response = await interaction.editReply({
-            components: [HELP_PAGES['help_about'](), buttonRow],
-            flags: MessageFlags.IsComponentsV2
-        });
+        const response = await interaction.editReply(
+            ui.interactionPublic({
+                components: [HELP_PAGES['help_about'](), buttonRow],
+                ephemeral: false
+            })
+        );
 
         const collector = response.createMessageComponentCollector({
             componentType: ComponentType.Button,
@@ -84,13 +86,15 @@ module.exports = {
 
         collector.on('collect', async i => {
             if (i.user.id !== interaction.user.id) {
-                return i.reply({ content: 'Use the command yourself to interact!', ephemeral: true });
+                return i.reply(ui.interactionPublic({ content: 'Use the command yourself to interact!', componentsV2: false }));
             }
 
-            await i.update({
-                components: [HELP_PAGES[i.customId](), buttonRow],
-                flags: MessageFlags.IsComponentsV2
-            });
+            await i.update(
+                ui.interactionPublic({
+                    components: [HELP_PAGES[i.customId](), buttonRow],
+                    ephemeral: false
+                })
+            );
         });
 
         collector.on('end', () => {

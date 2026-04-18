@@ -1,6 +1,6 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../schemas/db');
-const { embed } = require('../../functions/ui');
+const { ui } = require('../../functions/ui');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -14,9 +14,9 @@ module.exports = {
   userPermissions: ['ManageGuild'],
 
   async execute(interaction) {
-    if (!interaction.guild) return interaction.reply({ content: 'Servers only.', flags: MessageFlags.Ephemeral });
+    if (!interaction.guild) return interaction.reply(ui.interactionPublic({ content: 'Servers only.', componentsV2: false }));
     
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply(ui.interactionPublic());
     const guildId = interaction.guild.id;
 
     const actions = {
@@ -42,7 +42,7 @@ module.exports = {
 
     try {
       const result = await actions[interaction.options.getSubcommand()]();
-      interaction.editReply({ embeds: [embed(result)] });
+      interaction.editReply(ui.interactionPrivate(result));
     } catch (e) {
       console.error(e);
       interaction.editReply('Failed to update settings.');

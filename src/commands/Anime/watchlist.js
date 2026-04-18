@@ -1,13 +1,13 @@
-const { SlashCommandBuilder, MessageFlags, AttachmentBuilder, InteractionContextType } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, InteractionContextType } = require('discord.js');
 const db = require('../../schemas/db');
 const converters = require('../../utils/watchlist-converters');
-const { searchAnimeAniList, getAnimeByAniListId, getAnimeByMalId } = require('../../utils/API-services');
+const { searchAnimeByAniList, getAnimeByAniListId, getAnimeByMalId } = require('../../utils/API-services');
 const { bestMatch } = require('../../utils/fuzzy');
 const scheduler = require('../../functions/notificationScheduler');
-const { embed } = require('../../functions/ui');
+const { ui } = require('../../functions/ui');
 const axios = require('axios');
 
-const reply = (i, title, desc, color) => i.editReply({ embeds: [embed({ title, desc, color })] });
+const reply = (i, title, desc, color) => i.editReply(ui.interactionPrivate({ title, desc, color }));
 
 async function insertAnime(userId, username, anime, fallback) {
   const title = anime?.title?.english || anime?.title?.romaji || fallback;
@@ -45,8 +45,8 @@ module.exports = {
 
     const actions = {
       add: async () => {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        const data = /^\d+$/.test(input) ? await getAnimeByAniListId(input) : await searchAnimeAniList(input);
+        await interaction.deferReply(ui.interactionPublic());
+        const data = /^\d+$/.test(input) ? await getAnimeByAniListId(input) : await searchAnimeByAniList(input);
         const a = Array.isArray(data) ? data[0] : data;
         if (!a) return reply(interaction, 'Not Found', 'Anime not found.', 'Red');
         
@@ -55,7 +55,7 @@ module.exports = {
           : reply(interaction, 'Duplicate', 'Already in your list.', 'Yellow');
       },
       remove: async () => {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.deferReply(ui.interactionPublic());
         const { rows } = await db.query('SELECT * FROM watchlists WHERE user_id = $1', [uid]);
         const numericInput = /^\d+$/.test(input) ? parseInt(input, 10) : null;
         const match = numericInput
@@ -74,17 +74,17 @@ module.exports = {
       view: async () => {
         const target = interaction.options.getUser('user') || interaction.user;
         const isSelf = target.id === uid;
-        await interaction.deferReply({ flags: isSelf ? MessageFlags.Ephemeral : 0 });
+        await interaction.deferReply(ui.interactionPublic({ ephemeral: isSelf }));
 
         if (!isSelf) {
           const { rows } = await db.query('SELECT watchlist_visibility FROM user_preferences WHERE user_id = $1', [target.id]);
-          if ((rows[0]?.watchlist_visibility || 'private') === 'private') return reply(interaction, 'Private', 'This watchlist is private.', 'Yellow'); // Safety fix: Added ?.
+          if ((rows[0]?.watchlist_visibility || 'private') === 'private') return reply(interaction, 'Private', 'This watchlist is private.', 'Yellow');
         }
         const { rows: items } = await db.query('SELECT anime_title FROM watchlists WHERE user_id = $1', [target.id]);
         return reply(interaction, `${target.username}'s Watchlist`, items.map((r, i) => `${i + 1}. **${r.anime_title}**`).join('\n') || 'Empty.');
       },
       export: async () => {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.deferReply(ui.interactionPublic());
         const format = interaction.options.getString('format');
         const { rows } = await db.query('SELECT anime_title, anime_id FROM watchlists WHERE user_id = $1', [uid]);
         
@@ -96,7 +96,7 @@ module.exports = {
         });
       },
       import: async () => {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.deferReply(ui.interactionPublic());
         const format = interaction.options.getString('format'), file = interaction.options.getAttachment('file');
         const { data: raw } = await axios.get(file.url, { responseType: 'text' });
         
@@ -114,14 +114,16 @@ module.exports = {
     try { await actions[sub](); } 
     catch (e) { 
       console.error(e); 
-      (interaction.deferred || interaction.replied) ? interaction.editReply('Error.') : interaction.reply({ content: 'Error.', flags: MessageFlags.Ephemeral }); 
+      (interaction.deferred || interaction.replied)
+        ? interaction.editReply('Error.')
+        : interaction.reply(ui.interactionPublic({ content: 'Error.', componentsV2: false })); 
     }
   },
 
   async autocomplete(interaction) {
     const val = interaction.options.getFocused();
     if (!val) return interaction.respond([]);
-    const res = await searchAnimeAniList(val) || [];
+    const res = await searchAnimeByAniList(val) || [];
     const ranked = bestMatch(val, res, a => [a.title?.english, a.title?.romaji]).slice(0, 25);
     interaction.respond(ranked.map(a => ({ name: (a.title.english || a.title.romaji).slice(0, 100), value: String(a.id) })));
   }
