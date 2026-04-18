@@ -1,0 +1,1 @@
+// Complete removal of custom prefix commands support. (They may come back one day)
