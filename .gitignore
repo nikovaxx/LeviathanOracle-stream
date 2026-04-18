@@ -8,7 +8,11 @@ docs.md
 config.json
 .github/
 localdb.db
-FetchTest.js
+FetchTest-AS.js
+FetchTest-Jikan.js
+FetchTest-Al.js
 errors/
+Archive/
+API.md
 DB-Migration/
 TODO.md
